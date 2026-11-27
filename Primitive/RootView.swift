@@ -442,13 +442,25 @@ struct SettingsView: View {
 
             Section("Exploit Settings") {
                 Picker("Exploit", selection: $selectedExploit) {
-                    Text("bad_query").tag("bad_query")
-                    Text("worse_query").tag("worse_query")
+                    ForEach(PrimitiveExploit.allCases) { exploit in
+                        Text(exploit.rawValue).tag(exploit.rawValue)
+                    }
                 }
                 .pickerStyle(.menu)
-                Text("worse_query is selected by default. The selected option is saved on this device.")
+
+                let exploit = PrimitiveExploitEngine.selectedExploit(from: selectedExploit)
+                let compatibility = exploit.readmeCompatibility(for: device.operatingSystem)
+
+                LabeledContent("README compatibility", value: compatibility.title)
+                Text("Declared range: \(exploit.declaredSupport)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                Text(compatibility.explanation)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text("This is a version-range check only. The exploit has not been executed or validated by Primitive.")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
             }
 
             Section("Primitive") {
