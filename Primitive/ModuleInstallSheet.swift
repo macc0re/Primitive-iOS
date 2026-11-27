@@ -49,7 +49,7 @@ struct ModuleInstallSheet: View {
                 ContentUnavailableView("Queue is empty", systemImage: "tray", description: Text("Choose a module from Home or Store to add it here."))
             } else {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text(uninstallMode ? "Packages to uninstall" : "Packages in this queue").font(.headline)
+                    Text(uninstallMode ? "Modules to remove from Primitive" : "Packages in this queue").font(.headline)
                     ForEach(queue) { module in
                         HStack(spacing: 12) {
                             Image(systemName: module.symbol).foregroundStyle(Color.primitiveBlue)
@@ -87,6 +87,8 @@ struct ModuleInstallSheet: View {
                     .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 13)
                 }
                 .buttonStyle(.borderedProminent).tint(uninstallMode ? .red : Color.primitiveBlue).disabled(isInstalling)
+
+                if uninstallMode { Text("This only removes the module from Primitive’s local installed list. It does not uninstall system tweaks or reverse system changes.").font(.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading) }
 
                 Button("Clear Queue", role: .destructive) {
                     guard !isInstalling else { return }
