@@ -204,7 +204,7 @@ struct PasscodeStudioView: View {
                         .padding(.vertical, 15)
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(.purple)
+                .tint(Color.primitiveBlue)
 
                 HStack(spacing: 10) {
                     Image(systemName: "info.circle")
