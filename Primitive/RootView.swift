@@ -176,28 +176,6 @@ struct ModuleListView: View {
                 .padding(.horizontal).padding(.top, 8)
         }
     }
-}
-
-struct SettingsView: View {
-    var body: some View {
-        Form {
-            Section("Primitive") {
-                LabeledContent("Version", value: "0.1.0-dev")
-                LabeledContent("Build", value: "Foundation")
-            }
-            Section("Device") {
-                LabeledContent("Compatibility", value: "Not checked")
-                Text("System modification engines are not included in this foundation build.")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-            Section("About") {
-                LabeledContent("Developer", value: "Mac.Core")
-            }
-        }
-        .navigationTitle("Settings")
-    }
-}
-
 
     @ViewBuilder
     private func moduleRow(for module: ModuleInfo) -> some View {
@@ -223,3 +201,25 @@ struct SettingsView: View {
         }
         .padding(.vertical, 5)
     }
+
+}
+
+struct SettingsView: View {
+    var body: some View {
+        Form {
+            Section("Primitive") {
+                LabeledContent("Version", value: "0.1.0-dev")
+                LabeledContent("Build", value: "Foundation")
+            }
+            Section("Device") {
+                LabeledContent("Compatibility", value: "Not checked")
+                Text("System modification engines are not included in this foundation build.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Section("About") {
+                LabeledContent("Developer", value: "Mac.Core")
+            }
+        }
+        .navigationTitle("Settings")
+    }
+}
