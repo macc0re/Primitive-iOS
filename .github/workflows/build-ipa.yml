@@ -11,15 +11,13 @@ on:
 
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: xcode-27
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Select Xcode
-        run: |
-          sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
-          xcodebuild -version
+      - name: Verify Xcode 27 toolchain
+        run: xcodebuild -version
 
       - name: Prepare app icon
         run: sips -z 1024 1024 Primitive/Assets.xcassets/AppIcon.appiconset/AppIcon.png --out Primitive/Assets.xcassets/AppIcon.appiconset/AppIcon.png
