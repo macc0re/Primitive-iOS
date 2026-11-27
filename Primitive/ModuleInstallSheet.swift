@@ -4,7 +4,7 @@ struct ModuleInstallSheet: View {
     @Binding var queue: [ModuleInfo]
     @Binding var installedIDs: Set<String>
     let activeModule: ModuleInfo?
-    let onUninstall: (ModuleInfo) -> Void
+    let uninstallMode: Bool
     let onClose: () -> Void
 
     @State private var progress = 0
@@ -23,7 +23,7 @@ struct ModuleInstallSheet: View {
                     queueView
                 }
             }
-            .navigationTitle(activeModule != nil && queue.isEmpty ? activeModule!.title : "Install Queue")
+            .navigationTitle(activeModule != nil && queue.isEmpty ? activeModule!.title : (uninstallMode ? "Uninstall Queue" : "Install Queue"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -35,27 +35,6 @@ struct ModuleInstallSheet: View {
         .presentationDragIndicator(.visible)
         .safeAreaInset(edge: .bottom) {
             VStack(spacing: 8) {
-                if let module = activeModule, queue.isEmpty {
-                    Button(role: .destructive) {
-                        onUninstall(module)
-                        onClose()
-                    } label: {
-                        Label("Uninstall Tweak", systemImage: "trash")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.red)
-                    .disabled(isInstalling)
-                }
-                if !queue.isEmpty || (activeModule != nil && queue.isEmpty) {
-                    Button("Clear Queue", role: .destructive) {
-                        guard !isInstalling else { return }
-                        queue.removeAll()
-                        onClose()
-                    }
-                    .frame(maxWidth: .infinity)
-                    .disabled(isInstalling)
-                }
             }
             .padding(.horizontal, 20).padding(.vertical, 10)
             .background(.bar)
@@ -76,7 +55,7 @@ struct ModuleInstallSheet: View {
                 ContentUnavailableView("Queue is empty", systemImage: "tray", description: Text("Choose a module from Home or Store to add it here."))
             } else {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Packages in this queue").font(.headline)
+                    Text(uninstallMode ? "Packages to uninstall" : "Packages in this queue").font(.headline)
                     ForEach(queue) { module in
                         HStack(spacing: 12) {
                             Image(systemName: module.symbol).foregroundStyle(.purple)
@@ -150,11 +129,12 @@ struct ModuleInstallSheet: View {
                     guard !module.id.isEmpty else { throw ModuleInstallError.invalidModule }
                     progress = 20
                     try await Task.sleep(for: .milliseconds(220))
-                    installedIDs.insert(module.id)
+                    if uninstallMode { installedIDs.remove(module.id) } else { installedIDs.insert(module.id) }
                     UserDefaults.standard.set(Array(installedIDs), forKey: installedStorageKey)
                     progress = 65
                     try await Task.sleep(for: .milliseconds(220))
-                    guard installedIDs.contains(module.id) else { throw ModuleInstallError.registrationFailed }
+                    let stateMatches = uninstallMode ? !installedIDs.contains(module.id) : installedIDs.contains(module.id)
+                    guard stateMatches else { throw ModuleInstallError.registrationFailed }
                     progress = 100
                     try await Task.sleep(for: .milliseconds(180))
                 }
