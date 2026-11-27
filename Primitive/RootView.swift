@@ -102,6 +102,12 @@ struct HomeView: View {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 145), spacing: 12)], spacing: 12) {
                     ModuleCard(title: "Gestalt Tweaks", detail: "MobileGestalt customizations", symbol: "slider.horizontal.3")
                     ModuleCard(title: "Icon Studio", detail: "Icon collections and tools", symbol: "app.dashed")
+                    NavigationLink {
+                        PasscodeStudioView()
+                    } label: {
+                        ModuleCard(title: "Passcode Studio", detail: "Import and preview .passthm themes", symbol: "circle.grid.3x3")
+                    }
+                    .buttonStyle(.plain)
                     ModuleCard(title: "Live Wallpapers", detail: "Personal wallpaper library", symbol: "livephoto")
                     ModuleCard(title: "Device Manager", detail: "Compatibility and backups", symbol: "iphone.gen3")
                 }
@@ -132,6 +138,7 @@ struct ModuleCard: View {
         .frame(maxWidth: .infinity, minHeight: 125, alignment: .leading)
         .padding()
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20))
+        .contentShape(RoundedRectangle(cornerRadius: 20))
     }
 }
 
@@ -144,6 +151,7 @@ struct ModuleInfo: Identifiable {
     static let store = [
         ModuleInfo(title: "Gestalt Tweaks", detail: "Browse MobileGestalt packages.", symbol: "slider.horizontal.3"),
         ModuleInfo(title: "Icon Studio", detail: "Explore icon packs and assets.", symbol: "app.dashed"),
+        ModuleInfo(title: "Passcode Themes", detail: "Import and preview .passthm packages.", symbol: "circle.grid.3x3"),
         ModuleInfo(title: "Wallpapers", detail: "Manage wallpaper collections.", symbol: "livephoto"),
         ModuleInfo(title: "Utilities", detail: "Tools compatible with your device.", symbol: "wrench.and.screwdriver")
     ]
@@ -191,7 +199,7 @@ struct SettingsView: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section("About") {
-                LabeledContent("Developer", value: "Mac.Clover")
+                LabeledContent("Developer", value: "Mac.Core")
             }
         }
         .navigationTitle("Settings")
