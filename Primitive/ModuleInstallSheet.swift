@@ -4,6 +4,7 @@ struct ModuleInstallSheet: View {
     @Binding var queue: [ModuleInfo]
     @Binding var installedIDs: Set<String>
     let activeModule: ModuleInfo?
+    let onUninstall: (ModuleInfo) -> Void
     let onClose: () -> Void
 
     @State private var progress = 0
@@ -33,16 +34,31 @@ struct ModuleInstallSheet: View {
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .safeAreaInset(edge: .bottom) {
-            if !queue.isEmpty {
-                Button("Clear Queue", role: .destructive) {
-                    guard !isInstalling else { return }
-                    queue.removeAll()
-                    onClose()
+            VStack(spacing: 8) {
+                if let module = activeModule, queue.isEmpty {
+                    Button(role: .destructive) {
+                        onUninstall(module)
+                        onClose()
+                    } label: {
+                        Label("Uninstall Tweak", systemImage: "trash")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.red)
+                    .disabled(isInstalling)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 20).padding(.vertical, 10)
-                .background(.bar)
+                if !queue.isEmpty || (activeModule != nil && queue.isEmpty) {
+                    Button("Clear Queue", role: .destructive) {
+                        guard !isInstalling else { return }
+                        queue.removeAll()
+                        onClose()
+                    }
+                    .frame(maxWidth: .infinity)
+                    .disabled(isInstalling)
+                }
             }
+            .padding(.horizontal, 20).padding(.vertical, 10)
+            .background(.bar)
         }
         .alert("Installation failed", isPresented: Binding(
             get: { installError != nil },
