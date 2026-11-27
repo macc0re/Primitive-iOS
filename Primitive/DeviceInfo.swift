@@ -45,8 +45,9 @@ struct PrimitiveDeviceProfile {
     private static func machineIdentifier() -> String {
         var systemInfo = utsname()
         uname(&systemInfo)
-        return withUnsafePointer(to: &systemInfo.machine) {
-            $0.withMemoryRebound(to: CChar.self, capacity: MemoryLayout.size(ofValue: systemInfo.machine)) {
+        let machine = systemInfo.machine
+        return withUnsafePointer(to: machine) {
+            $0.withMemoryRebound(to: CChar.self, capacity: MemoryLayout.size(ofValue: machine)) {
                 String(cString: $0)
             }
         }
