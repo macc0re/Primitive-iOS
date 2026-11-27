@@ -42,7 +42,7 @@ struct RootView: View {
                                     .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
-                            .listRowBackground(selection == tab ? ColorColor.primitiveBlue.opacity(0.14) : Color.clear)
+                            .listRowBackground(selection == tab ? Color.primitiveBlue.opacity(0.14) : Color.clear)
                         }
                     }
                     .navigationTitle("Primitive")
