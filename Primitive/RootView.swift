@@ -27,9 +27,18 @@ struct RootView: View {
         Group {
             if horizontalSizeClass == .regular {
                 NavigationSplitView {
-                    List(PrimitiveTab.allCases, selection: $selection) { tab in
-                        Label(tab.rawValue, systemImage: tab.symbol)
-                            .tag(tab)
+                    List {
+                        ForEach(PrimitiveTab.allCases) { tab in
+                            Button {
+                                selection = tab
+                            } label: {
+                                Label(tab.rawValue, systemImage: tab.symbol)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .listRowBackground(selection == tab ? Color.purple.opacity(0.14) : Color.clear)
+                        }
                     }
                     .navigationTitle("Primitive")
                     .listStyle(.sidebar)
