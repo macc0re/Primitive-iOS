@@ -121,8 +121,8 @@ struct RootView: View {
     @ViewBuilder private func page(for tab: PrimitiveTab) -> some View {
         switch tab {
         case .home: HomeView(installedIDs: installedIDs, onSelect: select)
-        case .store: ModuleListView(title: "Primitive Store", subtitle: "Discover compatible customizations.", modules: ModuleInfo.store, installedIDs: installedIDs, isStore: true, onSelect: select, onInfo: { infoModule = $0 }, onUninstall: uninstall)
-        case .installed: ModuleListView(title: "Installed", subtitle: "Manage your installed customizations.", modules: ModuleInfo.catalog.filter { installedIDs.contains($0.id) }, installedIDs: installedIDs, isStore: false, onSelect: select, onInfo: { infoModule = $0 }, onUninstall: uninstall)
+        case .store: ModuleListView(title: "Primitive Store", subtitle: "Discover compatible customizations.", modules: ModuleInfo.store, installedIDs: installedIDs, onSelect: select, onInfo: { infoModule = $0 }, onUninstall: queueUninstall)
+        case .installed: ModuleListView(title: "Installed", subtitle: "Manage your installed customizations.", modules: ModuleInfo.catalog.filter { installedIDs.contains($0.id) }, installedIDs: installedIDs, onSelect: select, onInfo: { infoModule = $0 }, onUninstall: queueUninstall)
         case .settings: SettingsView()
         }
     }
