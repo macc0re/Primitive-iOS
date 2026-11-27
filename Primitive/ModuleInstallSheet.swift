@@ -70,7 +70,7 @@ struct ModuleInstallSheet: View {
                         }
                     }
                 }
-                .padding().background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18))
+                .padding().primitiveGlass(in: RoundedRectangle(cornerRadius: 18))
 
                 if isInstalling {
                     ProgressView(value: Double(progress), total: 100).tint(Color.primitiveBlue)
