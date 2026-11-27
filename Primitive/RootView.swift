@@ -380,7 +380,7 @@ struct ModuleListView: View {
                         }
                         if installedIDs.contains(module.id) {
                             Button(role: .destructive) { onUninstall(module) } label: {
-                                Label("Uninstall Tweak", systemImage: "trash")
+                                Label("Remove from Primitive", systemImage: "trash")
                             }
                         }
                     }
