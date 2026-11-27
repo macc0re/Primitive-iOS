@@ -52,9 +52,9 @@ struct ModuleInstallSheet: View {
                     Text(uninstallMode ? "Packages to uninstall" : "Packages in this queue").font(.headline)
                     ForEach(queue) { module in
                         HStack(spacing: 12) {
-                            Image(systemName: module.symbol).foregroundStyle(.purple)
+                            Image(systemName: module.symbol).foregroundStyle(Color.primitiveBlue)
                                 .frame(width: 38, height: 38)
-                                .background(.purple.opacity(0.12), in: RoundedRectangle(cornerRadius: 11))
+                                .background(Color.primitiveBlue.opacity(0.12), in: RoundedRectangle(cornerRadius: 11))
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(module.title).font(.subheadline.weight(.semibold))
                                 Text(module.detail).font(.caption).foregroundStyle(.secondary)
@@ -73,7 +73,7 @@ struct ModuleInstallSheet: View {
                 .padding().background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18))
 
                 if isInstalling {
-                    ProgressView(value: Double(progress), total: 100).tint(.purple)
+                    ProgressView(value: Double(progress), total: 100).tint(Color.primitiveBlue)
                     Text("Registering \(queue[min(currentIndex, queue.count - 1)].title)…")
                         .font(.caption).foregroundStyle(.secondary)
                 }
@@ -86,7 +86,7 @@ struct ModuleInstallSheet: View {
                     }
                     .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 13)
                 }
-                .buttonStyle(.borderedProminent).tint(uninstallMode ? .red : .purple).disabled(isInstalling)
+                .buttonStyle(.borderedProminent).tint(uninstallMode ? .red : Color.primitiveBlue).disabled(isInstalling)
 
                 Button("Clear Queue", role: .destructive) {
                     guard !isInstalling else { return }
