@@ -132,6 +132,9 @@ struct HomeView: View {
     let installedIDs: Set<String>
     let onSelect: (ModuleInfo) -> Void
     private let modules = ModuleInfo.catalog
+    @AppStorage("primitive.auto.respring.after.apply") private var autoRespring = true
+    @AppStorage("primitive.traditional.skip.setup") private var traditionalSkipSetup = true
+    @State private var activeNotice: HomeActionNotice?
 
     var body: some View {
         ScrollView {
@@ -153,6 +156,54 @@ struct HomeView: View {
                 }
                 .padding().frame(maxWidth: .infinity, alignment: .leading)
                 .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 22))
+
+                VStack(alignment: .leading, spacing: 18) {
+                    HStack(spacing: 14) {
+                        Image(systemName: "info").font(.title3.weight(.medium)).foregroundStyle(.secondary)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("VERSION 0.1.0-DEV")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                            Text("TWEAK OPTIONS")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    VStack(spacing: 8) {
+                        homeActionRow(title: "Apply Tweaks", color: Color.blue.opacity(0.22), foreground: .blue, notice: .apply)
+                        homeActionRow(title: "Remove All Tweaks", color: Color.red.opacity(0.20), foreground: .red, notice: .remove)
+                        homeActionRow(title: "Select Pairing File", color: Color.green.opacity(0.20), foreground: .green, notice: .pairing)
+                    }
+
+                    Divider().overlay(Color.white.opacity(0.12))
+
+                    Toggle("Auto respring after apply", isOn: $autoRespring)
+                        .font(.body.weight(.medium))
+                        .tint(.green)
+
+                    Divider().overlay(Color.white.opacity(0.12))
+
+                    HStack(spacing: 12) {
+                        Text("Traditional Skip Setup")
+                            .font(.body.weight(.medium))
+                        Button {
+                            activeNotice = .skipInfo
+                        } label: {
+                            Image(systemName: "info.circle")
+                                .foregroundStyle(.blue)
+                        }
+                        .buttonStyle(.plain)
+                        Spacer()
+                        Toggle("Traditional Skip Setup", isOn: $traditionalSkipSetup)
+                            .labelsHidden()
+                            .tint(.green)
+                    }
+                }
+                .padding(20)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 20))
+
                 Text("Explore modules").font(.title2.bold())
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 145), spacing: 12)], spacing: 12) {
                     ForEach(modules) { module in
@@ -165,6 +216,59 @@ struct HomeView: View {
             .padding().frame(maxWidth: 900, alignment: .leading).frame(maxWidth: .infinity)
         }
         .navigationTitle("Home")
+        .alert(item: $activeNotice) { notice in
+            Alert(
+                title: Text(notice.title),
+                message: Text(notice.message),
+                dismissButton: .default(Text("OK"))
+            )
+        }
+    }
+
+    private func homeActionRow(title: String, color: Color, foreground: Color, notice: HomeActionNotice) -> some View {
+        HStack(spacing: 12) {
+            Button {
+                activeNotice = notice
+            } label: {
+                Text(title)
+                    .font(.body.weight(.semibold))
+                    .frame(maxWidth: .infinity, minHeight: 62)
+                    .foregroundStyle(foreground)
+                    .background(color, in: RoundedRectangle(cornerRadius: 13))
+            }
+            .buttonStyle(.plain)
+            Button {
+                activeNotice = notice
+            } label: {
+                Image(systemName: "info")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.blue)
+                    .frame(width: 64, height: 62)
+                    .background(Color(uiColor: .tertiarySystemBackground), in: RoundedRectangle(cornerRadius: 13))
+            }
+            .buttonStyle(.plain)
+        }
+    }
+}
+
+private enum HomeActionNotice: String, Identifiable {
+    case apply, remove, pairing, skipInfo
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .apply: "Apply Tweaks"
+        case .remove: "Remove All Tweaks"
+        case .pairing: "Select Pairing File"
+        case .skipInfo: "Traditional Skip Setup"
+        }
+    }
+    var message: String {
+        switch self {
+        case .apply: "The MobileGestalt engine is not connected yet. This action will be enabled when the engine is implemented."
+        case .remove: "Tweak removal is not connected yet. Original-value backups and the restore engine must be implemented first."
+        case .pairing: "Pairing-file support is not connected yet. No file has been selected."
+        case .skipInfo: "This option stores your preference. Its system behavior will be connected when the exploit engine is integrated."
+        }
     }
 }
 
