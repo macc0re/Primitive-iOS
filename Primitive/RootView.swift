@@ -287,11 +287,30 @@ struct SettingsView: View {
         Form {
             Section {
                 HStack(spacing: 16) {
-                    Image(systemName: device.symbol)
-                        .font(.system(size: 54, weight: .regular))
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(.purple)
-                        .frame(width: 82, height: 104)
+                    Group {
+                        if let imageURL = device.imageURL {
+                            AsyncImage(url: imageURL) { phase in
+                                switch phase {
+                                case .success(let image):
+                                    image.resizable().scaledToFit()
+                                case .empty, .failure:
+                                    Image(systemName: device.symbol)
+                                        .resizable().scaledToFit()
+                                        .foregroundStyle(.purple.opacity(0.8))
+                                @unknown default:
+                                    Image(systemName: device.symbol)
+                                        .resizable().scaledToFit()
+                                        .foregroundStyle(.purple.opacity(0.8))
+                                }
+                            }
+                        } else {
+                            Image(systemName: device.symbol)
+                                .resizable().scaledToFit()
+                                .foregroundStyle(.purple.opacity(0.8))
+                        }
+                    }
+                    .frame(width: 82, height: 112)
+                    .accessibilityLabel(device.marketingName)
                     VStack(alignment: .leading, spacing: 5) {
                         Text(device.marketingName)
                             .font(.headline)
