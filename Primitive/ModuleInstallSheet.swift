@@ -74,7 +74,7 @@ struct ModuleInstallSheet: View {
 
                 if isInstalling {
                     ProgressView(value: Double(progress), total: 100).tint(Color.primitiveBlue)
-                    Text("Registering \(queue[min(currentIndex, queue.count - 1)].title)…")
+                    Text("\(uninstallMode ? "Removing" : "Registering") \(queue[min(currentIndex, queue.count - 1)].title)…")
                         .font(.caption).foregroundStyle(.secondary)
                 }
 
@@ -82,7 +82,7 @@ struct ModuleInstallSheet: View {
                     HStack {
                         if isInstalling { ProgressView().tint(.white) }
                         else { Image(systemName: uninstallMode ? "trash" : "arrow.down.circle.fill") }
-                        Text(isInstalling ? (uninstallMode ? "Uninstalling…" : "Installing…") : (uninstallMode ? "Uninstall All (\(queue.count))" : "Install All (\(queue.count))"))
+                        Text(isInstalling ? (uninstallMode ? "Removing…" : "Installing…") : (uninstallMode ? "Remove from Primitive (\(queue.count))" : "Install All (\(queue.count))"))
                     }
                     .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 13)
                 }
