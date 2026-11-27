@@ -100,7 +100,12 @@ struct HomeView: View {
 
                 Text("Explore modules").font(.title2.bold())
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 145), spacing: 12)], spacing: 12) {
-                    ModuleCard(title: "Gestalt Tweaks", detail: "MobileGestalt customizations", symbol: "slider.horizontal.3")
+                    NavigationLink {
+                        GestaltTweaksView()
+                    } label: {
+                        ModuleCard(title: "Gestalt Tweaks", detail: "MobileGestalt customizations", symbol: "slider.horizontal.3")
+                    }
+                    .buttonStyle(.plain)
                     ModuleCard(title: "Icon Studio", detail: "Icon collections and tools", symbol: "app.dashed")
                     NavigationLink {
                         PasscodeStudioView()
@@ -182,6 +187,12 @@ struct ModuleListView: View {
         if module.title == "Passcode Themes" {
             NavigationLink {
                 PasscodeStudioView()
+            } label: {
+                moduleLabel(module)
+            }
+        } else if module.title == "Gestalt Tweaks" {
+            NavigationLink {
+                GestaltTweaksView()
             } label: {
                 moduleLabel(module)
             }
