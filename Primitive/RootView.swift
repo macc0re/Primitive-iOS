@@ -280,18 +280,59 @@ struct ModuleListView: View {
 }
 
 struct SettingsView: View {
+    @AppStorage("primitive.exploit.selection") private var selectedExploit = "worse_query"
+    private let device = PrimitiveDeviceProfile.current
+
     var body: some View {
         Form {
+            Section {
+                HStack(spacing: 16) {
+                    Image(systemName: device.symbol)
+                        .font(.system(size: 54, weight: .regular))
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(.purple)
+                        .frame(width: 82, height: 104)
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(device.marketingName)
+                            .font(.headline)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.8)
+                        Text(device.identifier)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        Text(device.chip)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        Text("\(device.operatingSystem) (\(device.systemBuild))")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.vertical, 8)
+            } header: {
+                Text("Device Information")
+            }
+
+            Section("Exploit Settings") {
+                Picker("Exploit", selection: $selectedExploit) {
+                    Text("bad_query").tag("bad_query")
+                    Text("worse_query").tag("worse_query")
+                }
+                .pickerStyle(.menu)
+                Text("worse_query is selected by default. The selected option is saved on this device.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("Primitive") {
                 LabeledContent("Version", value: "0.1.0-dev")
                 LabeledContent("Build", value: "Foundation")
             }
-            Section("Device") {
-                LabeledContent("Compatibility", value: "Not checked")
-                Text("System modification engines are not included in this foundation build.")
-                    .font(.caption).foregroundStyle(.secondary)
+
+            Section("About") {
+                LabeledContent("Developer", value: "Mac.Core")
             }
-            Section("About") { LabeledContent("Developer", value: "Mac.Core") }
         }
         .navigationTitle("Settings")
     }
