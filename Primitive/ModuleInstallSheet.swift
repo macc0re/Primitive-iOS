@@ -33,12 +33,6 @@ struct ModuleInstallSheet: View {
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
-        .safeAreaInset(edge: .bottom) {
-            VStack(spacing: 8) {
-            }
-            .padding(.horizontal, 20).padding(.vertical, 10)
-            .background(.bar)
-        }
         .alert("Installation failed", isPresented: Binding(
             get: { installError != nil },
             set: { if !$0 { installError = nil } }
@@ -93,6 +87,15 @@ struct ModuleInstallSheet: View {
                     .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 13)
                 }
                 .buttonStyle(.borderedProminent).tint(uninstallMode ? .red : .purple).disabled(isInstalling)
+
+                Button("Clear Queue", role: .destructive) {
+                    guard !isInstalling else { return }
+                    queue.removeAll()
+                    onClose()
+                }
+                .buttonStyle(.bordered)
+                .frame(maxWidth: .infinity)
+                .disabled(isInstalling)
             }
             Spacer(minLength: 0)
         }
