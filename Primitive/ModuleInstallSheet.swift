@@ -31,6 +31,15 @@ struct ModuleInstallSheet: View {
                 }
             }
         }
+        .safeAreaInset(edge: .bottom) {
+            Button("Clear Queue", role: .destructive) {
+                onClearQueue()
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 10)
+            .background(.bar)
+        }
         .alert("Installation failed", isPresented: Binding(
             get: { installError != nil },
             set: { if !$0 { installError = nil } }
@@ -96,13 +105,6 @@ struct ModuleInstallSheet: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.purple)
-                .disabled(isInstalling)
-
-                Button("Clear Queue", role: .destructive) {
-                    onClearQueue()
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
                 .disabled(isInstalling)
             }
 
