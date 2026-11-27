@@ -114,7 +114,7 @@ struct ModuleInstallSheet: View {
         }
     }
 
-    private func installQueue() {
+    private func processQueue() {
         guard !isInstalling, !queue.isEmpty else { return }
         isInstalling = true
         installError = nil
