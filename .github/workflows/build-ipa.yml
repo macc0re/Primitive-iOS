@@ -21,6 +21,9 @@ jobs:
           sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
           xcodebuild -version
 
+      - name: Prepare app icon
+        run: sips -z 1024 1024 Primitive/Assets.xcassets/AppIcon.appiconset/AppIcon.png --out Primitive/Assets.xcassets/AppIcon.appiconset/AppIcon.png
+
       - name: Install XcodeGen
         run: brew install xcodegen
 
