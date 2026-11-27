@@ -138,7 +138,14 @@ struct HomeView: View {
     private let modules = ModuleInfo.catalog
     @AppStorage("primitive.auto.respring.after.apply") private var autoRespring = true
     @AppStorage("primitive.traditional.skip.setup") private var traditionalSkipSetup = true
+    @AppStorage("primitive.exploit.selection") private var selectedExploit = "worse_query"
     @State private var activeNotice: HomeActionNotice?
+
+    private var exploitCompatibility: PrimitiveExploit.Compatibility {
+        PrimitiveExploitEngine
+            .selectedExploit(from: selectedExploit)
+            .readmeCompatibility(for: PrimitiveDeviceProfile.current.operatingSystem)
+    }
 
     var body: some View {
         ScrollView {
@@ -153,9 +160,11 @@ struct HomeView: View {
                     HStack {
                         Label("Compatibility check", systemImage: "checkmark.shield")
                         Spacer()
-                        Text("Not checked").foregroundStyle(.secondary)
+                        Text(exploitCompatibility.title)
+                            .foregroundStyle(exploitCompatibility == .listed ? .green : .secondary)
+                            .multilineTextAlignment(.trailing)
                     }.font(.subheadline)
-                    Text("Device compatibility will appear here when the engine is implemented.")
+                    Text(exploitCompatibility.explanation)
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 .padding().frame(maxWidth: .infinity, alignment: .leading)
