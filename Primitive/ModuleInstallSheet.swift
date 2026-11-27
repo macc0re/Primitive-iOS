@@ -23,7 +23,7 @@ struct ModuleInstallSheet: View {
                     queueView
                 }
             }
-            .navigationTitle(activeModule != nil && queue.isEmpty ? activeModule!.title : (uninstallMode ? "Uninstall Queue" : "Install Queue"))
+            .navigationTitle(activeModule != nil && queue.isEmpty ? activeModule!.title : (uninstallMode ? "Uninstall Tweaks" : "Install Tweaks"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -49,7 +49,7 @@ struct ModuleInstallSheet: View {
                 ContentUnavailableView("Queue is empty", systemImage: "tray", description: Text("Choose a module from Home or Store to add it here."))
             } else {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text(uninstallMode ? "Modules to remove from Primitive" : "Packages in this queue").font(.headline)
+                    Text(uninstallMode ? "Tweaks to uninstall" : "Tweaks to install").font(.headline)
                     ForEach(queue) { module in
                         HStack(spacing: 12) {
                             Image(systemName: module.symbol).foregroundStyle(Color.primitiveBlue)
@@ -82,7 +82,7 @@ struct ModuleInstallSheet: View {
                     HStack {
                         if isInstalling { ProgressView().tint(.white) }
                         else { Image(systemName: uninstallMode ? "trash" : "arrow.down.circle.fill") }
-                        Text(isInstalling ? (uninstallMode ? "Removing…" : "Installing…") : (uninstallMode ? "Remove from Primitive (\(queue.count))" : "Install All (\(queue.count))"))
+                        Text(isInstalling ? (uninstallMode ? "Removing…" : "Installing…") : (uninstallMode ? "Uninstall Tweaks (\(queue.count))" : "Install Tweaks (\(queue.count))"))
                     }
                     .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 13)
                 }
