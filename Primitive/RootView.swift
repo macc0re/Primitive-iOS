@@ -5,9 +5,7 @@ enum PrimitiveTab: String, CaseIterable, Identifiable {
     case store = "Store"
     case installed = "Installed"
     case settings = "Settings"
-
     var id: String { rawValue }
-
     var symbol: String {
         switch self {
         case .home: "square.grid.2x2"
@@ -21,7 +19,10 @@ enum PrimitiveTab: String, CaseIterable, Identifiable {
 struct RootView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var selection: PrimitiveTab = .home
-    @State private var selectedModule: ModuleInfo?
+    @State private var showModuleSheet = false
+    @State private var installQueue: [ModuleInfo] = []
+    @State private var activeModule: ModuleInfo?
+    @State private var installedIDs = Set(UserDefaults.standard.stringArray(forKey: "primitive.installed.module.ids") ?? [])
 
     var body: some View {
         Group {
@@ -29,9 +30,7 @@ struct RootView: View {
                 NavigationSplitView {
                     List {
                         ForEach(PrimitiveTab.allCases) { tab in
-                            Button {
-                                selection = tab
-                            } label: {
+                            Button { selection = tab } label: {
                                 Label(tab.rawValue, systemImage: tab.symbol)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .contentShape(Rectangle())
@@ -42,63 +41,66 @@ struct RootView: View {
                     }
                     .navigationTitle("Primitive")
                     .listStyle(.sidebar)
-                } detail: {
-                    detail
-                }
+                } detail: { detail }
             } else {
                 TabView(selection: $selection) {
                     ForEach(PrimitiveTab.allCases) { tab in
-                        NavigationStack {
-                            page(for: tab)
-                        }
-                        .tabItem {
-                            Label(tab.rawValue, systemImage: tab.symbol)
-                        }
-                        .tag(tab)
+                        NavigationStack { page(for: tab) }
+                            .tabItem { Label(tab.rawValue, systemImage: tab.symbol) }
+                            .tag(tab)
                     }
                 }
             }
         }
         .tint(.purple)
-        .sheet(item: $selectedModule) { module in
-            ModuleInstallSheet(module: module) {
-                selectedModule = nil
-                selection = .home
-            }
+        .sheet(isPresented: $showModuleSheet) {
+            ModuleInstallSheet(
+                queue: $installQueue,
+                installedIDs: $installedIDs,
+                activeModule: activeModule,
+                onClose: {
+                    showModuleSheet = false
+                    activeModule = nil
+                }
+            )
         }
     }
 
-    @ViewBuilder
-    private var detail: some View {
+    private func select(_ module: ModuleInfo) {
+        if installedIDs.contains(module.id) {
+            activeModule = module
+        } else {
+            activeModule = nil
+            if !installQueue.contains(where: { $0.id == module.id }) {
+                installQueue.append(module)
+            }
+        }
+        showModuleSheet = true
+    }
+
+    @ViewBuilder private var detail: some View {
         switch selection {
-        case .home: HomeView(onInstall: { selectedModule = $0 })
-        case .store: ModuleListView(title: "Primitive Store", subtitle: "Discover compatible customizations.", modules: ModuleInfo.store, onInstall: { selectedModule = $0 })
-        case .installed: ModuleListView(title: "Installed", subtitle: "Manage your installed customizations.", modules: ModuleInfo.installed, onInstall: { selectedModule = $0 })
+        case .home: HomeView(installedIDs: installedIDs, onSelect: select)
+        case .store: ModuleListView(title: "Primitive Store", subtitle: "Discover compatible customizations.", modules: ModuleInfo.store, installedIDs: installedIDs, onSelect: select)
+        case .installed: ModuleListView(title: "Installed", subtitle: "Manage your installed customizations.", modules: ModuleInfo.catalog.filter { installedIDs.contains($0.id) }, installedIDs: installedIDs, onSelect: select)
         case .settings: SettingsView()
         }
     }
 
-    @ViewBuilder
-    private func page(for tab: PrimitiveTab) -> some View {
+    @ViewBuilder private func page(for tab: PrimitiveTab) -> some View {
         switch tab {
-        case .home: HomeView(onInstall: { selectedModule = $0 })
-        case .store: ModuleListView(title: "Primitive Store", subtitle: "Discover compatible customizations.", modules: ModuleInfo.store, onInstall: { selectedModule = $0 })
-        case .installed: ModuleListView(title: "Installed", subtitle: "Manage your installed customizations.", modules: ModuleInfo.installed, onInstall: { selectedModule = $0 })
+        case .home: HomeView(installedIDs: installedIDs, onSelect: select)
+        case .store: ModuleListView(title: "Primitive Store", subtitle: "Discover compatible customizations.", modules: ModuleInfo.store, installedIDs: installedIDs, onSelect: select)
+        case .installed: ModuleListView(title: "Installed", subtitle: "Manage your installed customizations.", modules: ModuleInfo.catalog.filter { installedIDs.contains($0.id) }, installedIDs: installedIDs, onSelect: select)
         case .settings: SettingsView()
         }
     }
 }
 
 struct HomeView: View {
-    let onInstall: (ModuleInfo) -> Void
-
-    private let modules = [
-        ModuleInfo(title: "Gestalt Tweaks", detail: "MobileGestalt customizations", symbol: "slider.horizontal.3"),
-        ModuleInfo(title: "Icon Studio", detail: "Icon collections and tools", symbol: "app.dashed"),
-        ModuleInfo(title: "Passcode Studio", detail: "Import and preview .passthm themes", symbol: "circle.grid.3x3"),
-        ModuleInfo(title: "Live Wallpapers", detail: "Personal wallpaper library", symbol: "livephoto"),
-        ModuleInfo(title: "Device Manager", detail: "Compatibility and backups", symbol: "iphone.gen3")
-    ]
+    let installedIDs: Set<String>
+    let onSelect: (ModuleInfo) -> Void
+    private let modules = ModuleInfo.catalog
 
     var body: some View {
         ScrollView {
@@ -106,13 +108,10 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("PRIMITIVE").font(.caption.weight(.bold)).tracking(2).foregroundStyle(.secondary)
                     Text("Make iOS yours.").font(.largeTitle.bold())
-                    Text("A unified home for system customization.")
-                        .font(.subheadline).foregroundStyle(.secondary)
+                    Text("A unified home for system customization.").font(.subheadline).foregroundStyle(.secondary)
                 }
-
                 VStack(alignment: .leading, spacing: 12) {
-                    Label("Your device", systemImage: "iphone")
-                        .font(.headline)
+                    Label("Your device", systemImage: "iphone").font(.headline)
                     HStack {
                         Label("Compatibility check", systemImage: "checkmark.shield")
                         Spacer()
@@ -121,22 +120,18 @@ struct HomeView: View {
                     Text("Device compatibility will appear here when the engine is implemented.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
-                .padding()
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding().frame(maxWidth: .infinity, alignment: .leading)
                 .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 22))
-
                 Text("Explore modules").font(.title2.bold())
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 145), spacing: 12)], spacing: 12) {
                     ForEach(modules) { module in
-                        ModuleCard(module: module) {
-                            onInstall(module)
+                        ModuleCard(module: module, isInstalled: installedIDs.contains(module.id)) {
+                            onSelect(module)
                         }
                     }
                 }
             }
-            .padding()
-            .frame(maxWidth: 900, alignment: .leading)
-            .frame(maxWidth: .infinity)
+            .padding().frame(maxWidth: 900, alignment: .leading).frame(maxWidth: .infinity)
         }
         .navigationTitle("Home")
     }
@@ -144,41 +139,51 @@ struct HomeView: View {
 
 struct ModuleCard: View {
     let module: ModuleInfo
-    let onInstall: () -> Void
+    let isInstalled: Bool
+    let onSelect: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Image(systemName: module.symbol)
-                .font(.title2)
-                .foregroundStyle(.tint)
+            Image(systemName: module.symbol).font(.title2).foregroundStyle(.tint)
                 .frame(width: 42, height: 42)
                 .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 13))
             Text(module.title).font(.headline)
             Text(module.detail).font(.caption).foregroundStyle(.secondary)
             HStack {
                 Spacer()
-                Button(action: onInstall) {
-                    Label("Install", systemImage: "arrow.down.circle")
+                Button(action: onSelect) {
+                    Label(isInstalled ? "Open" : "Install", systemImage: isInstalled ? "arrow.up.right.square" : "arrow.down.circle")
                         .font(.caption.weight(.semibold))
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.small)
-                .tint(.purple)
+                .buttonStyle(.borderedProminent).controlSize(.small).tint(.purple)
             }
         }
         .frame(maxWidth: .infinity, minHeight: 145, alignment: .leading)
-        .padding()
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20))
+        .padding().background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20))
         .contentShape(RoundedRectangle(cornerRadius: 20))
     }
 }
 
-struct ModuleInfo: Identifiable {
+struct ModuleInfo: Identifiable, Hashable {
     let title: String
     let detail: String
     let symbol: String
-    var id: String { title }
+    var id: String {
+        switch title {
+        case "Passcode Studio", "Passcode Themes": "passcode-studio"
+        case "Live Wallpapers", "Wallpapers": "wallpapers"
+        case "Utilities", "Device Manager": title.lowercased().replacingOccurrences(of: " ", with: "-")
+        default: title.lowercased().replacingOccurrences(of: " ", with: "-")
+        }
+    }
 
+    static let catalog = [
+        ModuleInfo(title: "Gestalt Tweaks", detail: "MobileGestalt customizations", symbol: "slider.horizontal.3"),
+        ModuleInfo(title: "Icon Studio", detail: "Icon collections and tools", symbol: "app.dashed"),
+        ModuleInfo(title: "Passcode Studio", detail: "Import and preview .passthm themes", symbol: "circle.grid.3x3"),
+        ModuleInfo(title: "Live Wallpapers", detail: "Personal wallpaper library", symbol: "livephoto"),
+        ModuleInfo(title: "Device Manager", detail: "Compatibility and backups", symbol: "iphone.gen3")
+    ]
     static let store = [
         ModuleInfo(title: "Gestalt Tweaks", detail: "Browse MobileGestalt packages.", symbol: "slider.horizontal.3"),
         ModuleInfo(title: "Icon Studio", detail: "Explore icon packs and assets.", symbol: "app.dashed"),
@@ -186,42 +191,40 @@ struct ModuleInfo: Identifiable {
         ModuleInfo(title: "Wallpapers", detail: "Manage wallpaper collections.", symbol: "livephoto"),
         ModuleInfo(title: "Utilities", detail: "Tools compatible with your device.", symbol: "wrench.and.screwdriver")
     ]
-    static let installed = [
-        ModuleInfo(title: "No packages yet", detail: "Installed customizations will appear here.", symbol: "shippingbox")
-    ]
 }
 
 struct ModuleListView: View {
     let title: String
     let subtitle: String
     let modules: [ModuleInfo]
-    let onInstall: (ModuleInfo) -> Void
+    let installedIDs: Set<String>
+    let onSelect: (ModuleInfo) -> Void
 
     var body: some View {
-        List(modules) { module in
-            HStack(spacing: 12) {
-                Label {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(module.title).font(.headline)
-                        Text(module.detail).font(.caption).foregroundStyle(.secondary)
+        List {
+            if modules.isEmpty {
+                ContentUnavailableView("No modules installed", systemImage: "shippingbox", description: Text("Modules you install will appear here."))
+            } else {
+                ForEach(modules) { module in
+                    HStack(spacing: 12) {
+                        Label {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(module.title).font(.headline)
+                                Text(module.detail).font(.caption).foregroundStyle(.secondary)
+                            }
+                        } icon: {
+                            Image(systemName: module.symbol).foregroundStyle(.tint)
+                        }
+                        Spacer(minLength: 8)
+                        Button { onSelect(module) } label: {
+                            Text(installedIDs.contains(module.id) ? "Open" : "Install")
+                                .font(.subheadline.weight(.semibold))
+                        }
+                        .buttonStyle(.borderedProminent).controlSize(.small).tint(.purple)
                     }
-                } icon: {
-                    Image(systemName: module.symbol).foregroundStyle(.tint)
-                }
-                Spacer(minLength: 8)
-                if module.title != "No packages yet" {
-                    Button {
-                        onInstall(module)
-                    } label: {
-                        Text("Install")
-                            .font(.subheadline.weight(.semibold))
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
-                    .tint(.purple)
+                    .padding(.vertical, 5)
                 }
             }
-            .padding(.vertical, 5)
         }
         .navigationTitle(title)
         .safeAreaInset(edge: .top) {
@@ -244,9 +247,7 @@ struct SettingsView: View {
                 Text("System modification engines are not included in this foundation build.")
                     .font(.caption).foregroundStyle(.secondary)
             }
-            Section("About") {
-                LabeledContent("Developer", value: "Mac.Core")
-            }
+            Section("About") { LabeledContent("Developer", value: "Mac.Core") }
         }
         .navigationTitle("Settings")
     }
