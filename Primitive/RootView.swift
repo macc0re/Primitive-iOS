@@ -22,6 +22,7 @@ struct RootView: View {
     @State private var showModuleSheet = false
     @State private var installQueue: [ModuleInfo] = []
     @State private var activeModule: ModuleInfo?
+    @State private var infoModule: ModuleInfo?
     @State private var installedIDs = Set(UserDefaults.standard.stringArray(forKey: "primitive.installed.module.ids") ?? [])
 
     var body: some View {
@@ -58,12 +59,36 @@ struct RootView: View {
                 queue: $installQueue,
                 installedIDs: $installedIDs,
                 activeModule: activeModule,
+                onUninstall: uninstall,
                 onClose: {
                     showModuleSheet = false
                     activeModule = nil
                 }
             )
         }
+        .sheet(item: $infoModule) { module in
+            NavigationStack {
+                VStack(alignment: .leading, spacing: 16) {
+                    Image(systemName: module.symbol).font(.system(size: 42)).foregroundStyle(.purple)
+                    Text(module.title).font(.title2.bold())
+                    Text(module.detail).foregroundStyle(.secondary)
+                    LabeledContent("Package ID", value: module.id)
+                    LabeledContent("Status", value: installedIDs.contains(module.id) ? "Installed" : "Not installed")
+                    Spacer()
+                }
+                .padding(24)
+                .navigationTitle("Package Info")
+                .navigationBarTitleDisplayMode(.inline)
+            }
+            .presentationDetents([.medium])
+        }
+    }
+
+    private func uninstall(_ module: ModuleInfo) {
+        installedIDs.remove(module.id)
+        UserDefaults.standard.set(Array(installedIDs), forKey: "primitive.installed.module.ids")
+        installQueue.removeAll { $0.id == module.id }
+        activeModule = nil
     }
 
     private func select(_ module: ModuleInfo) {
@@ -81,8 +106,8 @@ struct RootView: View {
     @ViewBuilder private var detail: some View {
         switch selection {
         case .home: HomeView(installedIDs: installedIDs, onSelect: select)
-        case .store: ModuleListView(title: "Primitive Store", subtitle: "Discover compatible customizations.", modules: ModuleInfo.store, installedIDs: installedIDs, onSelect: select)
-        case .installed: ModuleListView(title: "Installed", subtitle: "Manage your installed customizations.", modules: ModuleInfo.catalog.filter { installedIDs.contains($0.id) }, installedIDs: installedIDs, onSelect: select)
+        case .store: ModuleListView(title: "Primitive Store", subtitle: "Discover compatible customizations.", modules: ModuleInfo.store, installedIDs: installedIDs, isStore: true, onSelect: select, onInfo: { infoModule = $0 }, onUninstall: uninstall)
+        case .installed: ModuleListView(title: "Installed", subtitle: "Manage your installed customizations.", modules: ModuleInfo.catalog.filter { installedIDs.contains($0.id) }, installedIDs: installedIDs, isStore: false, onSelect: select, onInfo: { infoModule = $0 }, onUninstall: uninstall)
         case .settings: SettingsView()
         }
     }
@@ -198,7 +223,11 @@ struct ModuleListView: View {
     let subtitle: String
     let modules: [ModuleInfo]
     let installedIDs: Set<String>
+    let isStore: Bool
     let onSelect: (ModuleInfo) -> Void
+    let onInfo: (ModuleInfo) -> Void
+    let onUninstall: (ModuleInfo) -> Void
+    @State private var infoModule: ModuleInfo?
 
     var body: some View {
         List {
@@ -223,6 +252,18 @@ struct ModuleListView: View {
                         .buttonStyle(.borderedProminent).controlSize(.small).tint(.purple)
                     }
                     .padding(.vertical, 5)
+                    .contextMenu {
+                        if isStore {
+                            Button { onInfo(module) } label: {
+                                Label("Info", systemImage: "info.circle")
+                            }
+                            if installedIDs.contains(module.id) {
+                                Button(role: .destructive) { onUninstall(module) } label: {
+                                    Label("Uninstall Tweak", systemImage: "trash")
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
