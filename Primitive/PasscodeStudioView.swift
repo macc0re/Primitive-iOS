@@ -53,7 +53,7 @@ final class PasscodeThemeLibrary: ObservableObject {
 
         let folder = try themeFolder()
         let originalName = sourceURL.lastPathComponent
-        let safeName = "\\(UUID().uuidString.prefix(8))-\\(originalName)"
+        let safeName = "\(UUID().uuidString.prefix(8))-\(originalName)"
         let destination = folder.appendingPathComponent(safeName)
 
         try fileManager.copyItem(at: sourceURL, to: destination)
