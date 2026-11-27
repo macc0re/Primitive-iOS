@@ -400,26 +400,22 @@ struct SettingsView: View {
                             AsyncImage(url: imageURL) { phase in
                                 switch phase {
                                 case .success(let image):
-                                    image.resizable().scaledToFit()
+                                    image
+                                        .resizable()
+                                        .scaledToFit()
                                 case .empty, .failure:
-                                    Image(systemName: device.symbol)
-                                        .resizable().scaledToFit()
-                                        .foregroundStyle(Color.primitiveBlue.opacity(0.8))
+                                    Color.clear
                                 @unknown default:
-                                    Image(systemName: device.symbol)
-                                        .resizable().scaledToFit()
-                                        .foregroundStyle(Color.primitiveBlue.opacity(0.8))
+                                    Color.clear
                                 }
                             }
                         } else {
-                            Image(systemName: device.symbol)
-                                .resizable().scaledToFit()
-                                .foregroundStyle(Color.primitiveBlue.opacity(0.8))
+                            Color.clear
                         }
                     }
                     .frame(
-                        width: UIDevice.current.userInterfaceIdiom == .pad ? 155 : 125,
-                        height: UIDevice.current.userInterfaceIdiom == .pad ? 155 : 185
+                        width: UIDevice.current.userInterfaceIdiom == .pad ? 190 : 145,
+                        height: UIDevice.current.userInterfaceIdiom == .pad ? 210 : 225
                     )
                     .accessibilityLabel(device.marketingName)
                     VStack(alignment: .leading, spacing: 5) {
