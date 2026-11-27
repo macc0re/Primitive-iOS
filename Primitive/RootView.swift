@@ -457,17 +457,23 @@ struct SettingsView: View {
                 }
                 .pickerStyle(.menu)
 
-                let exploit = PrimitiveExploitEngine.selectedExploit(from: selectedExploit)
-                let compatibility = exploit.readmeCompatibility(for: device.operatingSystem)
+                let preflight = PrimitiveExploitPreflight(
+                    exploit: PrimitiveExploitEngine.selectedExploit(from: selectedExploit),
+                    device: device
+                )
 
-                LabeledContent("README compatibility", value: compatibility.title)
-                Text("Declared range: \(exploit.declaredSupport)")
+                LabeledContent("Selected PoC", value: preflight.exploit.rawValue)
+                LabeledContent("README compatibility", value: preflight.compatibility.title)
+                LabeledContent("Device", value: preflight.deviceSummary)
+                LabeledContent("OS build", value: preflight.buildSummary)
+                LabeledContent("Runtime", value: preflight.runtimeStatus)
+                Text("Declared range: \(preflight.exploit.declaredSupport)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Text(compatibility.explanation)
+                Text(preflight.compatibility.explanation)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Text("This is a version-range check only. The exploit has not been executed or validated by Primitive.")
+                Text(preflight.limitations)
                     .font(.caption)
                     .foregroundStyle(.orange)
             }
