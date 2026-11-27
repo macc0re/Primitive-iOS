@@ -1,44 +1,48 @@
 import SwiftUI
 
 struct ModuleInstallSheet: View {
-    let module: ModuleInfo
-    let onClearQueue: () -> Void
+    @Binding var queue: [ModuleInfo]
+    @Binding var installedIDs: Set<String>
+    let activeModule: ModuleInfo?
+    let onClose: () -> Void
 
     @State private var progress = 0
     @State private var isInstalling = false
-    @State private var isInstalled = false
+    @State private var currentIndex = 0
     @State private var installError: String?
 
-    private var storageKey: String {
-        "primitive.module.installed.\(module.id)"
-    }
+    private let installedStorageKey = "primitive.installed.module.ids"
 
     var body: some View {
         NavigationStack {
             Group {
-                if isInstalled {
-                    installedDestination
+                if let module = activeModule, queue.isEmpty {
+                    moduleDestination(module)
                 } else {
-                    installQueue
+                    queueView
                 }
             }
-            .navigationTitle(isInstalled ? module.title : "Install Queue")
+            .navigationTitle(activeModule != nil && queue.isEmpty ? activeModule!.title : "Install Queue")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { onClearQueue() }
-                        .disabled(isInstalling)
+                    Button("Done") { onClose() }.disabled(isInstalling)
                 }
             }
         }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
         .safeAreaInset(edge: .bottom) {
-            Button("Clear Queue", role: .destructive) {
-                onClearQueue()
+            if !queue.isEmpty {
+                Button("Clear Queue", role: .destructive) {
+                    guard !isInstalling else { return }
+                    queue.removeAll()
+                    onClose()
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 20).padding(.vertical, 10)
+                .background(.bar)
             }
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 10)
-            .background(.bar)
         }
         .alert("Installation failed", isPresented: Binding(
             get: { installError != nil },
@@ -50,128 +54,97 @@ struct ModuleInstallSheet: View {
         }
     }
 
-    private var installQueue: some View {
-        VStack(spacing: 22) {
-            VStack(alignment: .leading, spacing: 14) {
-                Text("Selected package")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .textCase(.uppercase)
-
-                HStack(spacing: 14) {
-                    Image(systemName: module.symbol)
-                        .font(.title2)
-                        .foregroundStyle(.purple)
-                        .frame(width: 48, height: 48)
-                        .background(.purple.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(module.title).font(.headline)
-                        Text(module.detail).font(.caption).foregroundStyle(.secondary)
-                    }
-                    Spacer(minLength: 0)
-                    if isInstalling {
-                        Text("\(progress)%")
-                            .font(.subheadline.monospacedDigit().weight(.semibold))
-                            .foregroundStyle(.tint)
+    private var queueView: some View {
+        VStack(spacing: 16) {
+            if queue.isEmpty {
+                ContentUnavailableView("Queue is empty", systemImage: "tray", description: Text("Choose a module from Home or Store to add it here."))
+            } else {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Packages in this queue").font(.headline)
+                    ForEach(queue) { module in
+                        HStack(spacing: 12) {
+                            Image(systemName: module.symbol).foregroundStyle(.purple)
+                                .frame(width: 38, height: 38)
+                                .background(.purple.opacity(0.12), in: RoundedRectangle(cornerRadius: 11))
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(module.title).font(.subheadline.weight(.semibold))
+                                Text(module.detail).font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            if isInstalling && queue.firstIndex(of: module) == currentIndex {
+                                Text("\(progress)%").font(.caption.monospacedDigit().weight(.semibold))
+                            } else if installedIDs.contains(module.id) {
+                                Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                            } else {
+                                Image(systemName: "clock").foregroundStyle(.secondary)
+                            }
+                        }
                     }
                 }
+                .padding().background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18))
 
                 if isInstalling {
-                    ProgressView(value: Double(progress), total: 100)
-                        .tint(.purple)
-                    Text(installationStatus)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    ProgressView(value: Double(progress), total: 100).tint(.purple)
+                    Text("Registering \(queue[min(currentIndex, queue.count - 1)].title)…")
+                        .font(.caption).foregroundStyle(.secondary)
                 }
-            }
-            .padding()
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20))
 
-            VStack(spacing: 12) {
-                Button {
-                    beginInstallation()
-                } label: {
+                Button(action: installQueue) {
                     HStack {
-                        if isInstalling {
-                            ProgressView().tint(.white)
-                        } else {
-                            Image(systemName: "arrow.down.circle.fill")
-                        }
-                        Text(isInstalling ? "Installing…" : "Install")
+                        if isInstalling { ProgressView().tint(.white) }
+                        else { Image(systemName: "arrow.down.circle.fill") }
+                        Text(isInstalling ? "Installing…" : "Install All (\(queue.count))")
                     }
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 13)
+                    .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 13)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(.purple)
-                .disabled(isInstalling)
+                .buttonStyle(.borderedProminent).tint(.purple).disabled(isInstalling)
             }
-
-            Spacer()
+            Spacer(minLength: 0)
         }
         .padding(20)
     }
 
-    private var installationStatus: String {
-        switch progress {
-        case 0..<25: "Preparing package…"
-        case 25..<60: "Registering module…"
-        case 60..<100: "Verifying installation…"
-        default: "Installation complete"
-        }
-    }
-
-    @ViewBuilder
-    private var installedDestination: some View {
-        switch module.title {
-        case "Gestalt Tweaks":
-            GestaltTweaksView()
-        case "Passcode Studio", "Passcode Themes":
-            PasscodeStudioView()
+    @ViewBuilder private func moduleDestination(_ module: ModuleInfo) -> some View {
+        switch module.id {
+        case "gestalt-tweaks": GestaltTweaksView()
+        case "passcode-studio": PasscodeStudioView()
         default:
             VStack(spacing: 14) {
-                Image(systemName: module.symbol)
-                    .font(.system(size: 42))
-                    .foregroundStyle(.tint)
+                Image(systemName: module.symbol).font(.system(size: 42)).foregroundStyle(.tint)
                 Text(module.title).font(.title2.bold())
-                Text("The module is now enabled in Primitive. Its feature engine is not available in this build yet.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
+                Text("This module is registered in Primitive. Its feature engine is not available in this build yet.")
+                    .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
             }
             .padding(28)
         }
     }
 
-    private func beginInstallation() {
-        guard !isInstalling, !isInstalled else { return }
+    private func installQueue() {
+        guard !isInstalling, !queue.isEmpty else { return }
         isInstalling = true
         installError = nil
+        currentIndex = 0
+        progress = 0
 
-        Task {
+        Task { @MainActor in
             do {
-                // Validate the selected module before registering it.
-                guard !module.id.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                    throw ModuleInstallError.invalidModule
+                let pending = queue
+                for (index, module) in pending.enumerated() {
+                    currentIndex = index
+                    guard !module.id.isEmpty else { throw ModuleInstallError.invalidModule }
+                    progress = 20
+                    try await Task.sleep(for: .milliseconds(220))
+                    installedIDs.insert(module.id)
+                    UserDefaults.standard.set(Array(installedIDs), forKey: installedStorageKey)
+                    progress = 65
+                    try await Task.sleep(for: .milliseconds(220))
+                    guard installedIDs.contains(module.id) else { throw ModuleInstallError.registrationFailed }
+                    progress = 100
+                    try await Task.sleep(for: .milliseconds(180))
                 }
-                progress = 20
-                try await Task.sleep(for: .milliseconds(250))
-
-                // Persist the module's enabled state locally.
-                UserDefaults.standard.set(true, forKey: storageKey)
-                progress = 60
-                try await Task.sleep(for: .milliseconds(250))
-
-                // Read back the stored state to verify registration.
-                guard UserDefaults.standard.bool(forKey: storageKey) else {
-                    throw ModuleInstallError.registrationFailed
-                }
-                progress = 100
-                try await Task.sleep(for: .milliseconds(200))
-
-                isInstalled = true
+                queue.removeAll()
                 isInstalling = false
+                onClose()
             } catch {
                 isInstalling = false
                 installError = error.localizedDescription
@@ -183,13 +156,10 @@ struct ModuleInstallSheet: View {
 private enum ModuleInstallError: LocalizedError {
     case invalidModule
     case registrationFailed
-
     var errorDescription: String? {
         switch self {
-        case .invalidModule:
-            "The selected module is invalid."
-        case .registrationFailed:
-            "Primitive could not verify the module registration."
+        case .invalidModule: "The selected module is invalid."
+        case .registrationFailed: "Primitive could not verify the module registration."
         }
     }
 }
