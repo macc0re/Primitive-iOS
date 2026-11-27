@@ -20,7 +20,8 @@ enum PrimitiveTab: String, CaseIterable, Identifiable {
 
 struct RootView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @State private var selection: PrimitiveTab? = .home
+    @State private var selection: PrimitiveTab = .home
+    @State private var selectedModule: ModuleInfo?
 
     var body: some View {
         Group {
@@ -28,7 +29,7 @@ struct RootView: View {
                 NavigationSplitView {
                     List(PrimitiveTab.allCases, selection: $selection) { tab in
                         Label(tab.rawValue, systemImage: tab.symbol)
-                            .tag(tab as PrimitiveTab?)
+                            .tag(tab)
                     }
                     .navigationTitle("Primitive")
                     .listStyle(.sidebar)
@@ -36,7 +37,7 @@ struct RootView: View {
                     detail
                 }
             } else {
-                TabView {
+                TabView(selection: $selection) {
                     ForEach(PrimitiveTab.allCases) { tab in
                         NavigationStack {
                             page(for: tab)
@@ -44,19 +45,26 @@ struct RootView: View {
                         .tabItem {
                             Label(tab.rawValue, systemImage: tab.symbol)
                         }
+                        .tag(tab)
                     }
                 }
             }
         }
         .tint(.purple)
+        .sheet(item: $selectedModule) { module in
+            ModuleInstallSheet(module: module) {
+                selectedModule = nil
+                selection = .home
+            }
+        }
     }
 
     @ViewBuilder
     private var detail: some View {
-        switch selection ?? .home {
-        case .home: HomeView()
-        case .store: ModuleListView(title: "Primitive Store", subtitle: "Discover compatible customizations.", modules: ModuleInfo.store)
-        case .installed: ModuleListView(title: "Installed", subtitle: "Manage your installed customizations.", modules: ModuleInfo.installed)
+        switch selection {
+        case .home: HomeView(onInstall: { selectedModule = $0 })
+        case .store: ModuleListView(title: "Primitive Store", subtitle: "Discover compatible customizations.", modules: ModuleInfo.store, onInstall: { selectedModule = $0 })
+        case .installed: ModuleListView(title: "Installed", subtitle: "Manage your installed customizations.", modules: ModuleInfo.installed, onInstall: { selectedModule = $0 })
         case .settings: SettingsView()
         }
     }
@@ -64,15 +72,25 @@ struct RootView: View {
     @ViewBuilder
     private func page(for tab: PrimitiveTab) -> some View {
         switch tab {
-        case .home: HomeView()
-        case .store: ModuleListView(title: "Primitive Store", subtitle: "Discover compatible customizations.", modules: ModuleInfo.store)
-        case .installed: ModuleListView(title: "Installed", subtitle: "Manage your installed customizations.", modules: ModuleInfo.installed)
+        case .home: HomeView(onInstall: { selectedModule = $0 })
+        case .store: ModuleListView(title: "Primitive Store", subtitle: "Discover compatible customizations.", modules: ModuleInfo.store, onInstall: { selectedModule = $0 })
+        case .installed: ModuleListView(title: "Installed", subtitle: "Manage your installed customizations.", modules: ModuleInfo.installed, onInstall: { selectedModule = $0 })
         case .settings: SettingsView()
         }
     }
 }
 
 struct HomeView: View {
+    let onInstall: (ModuleInfo) -> Void
+
+    private let modules = [
+        ModuleInfo(title: "Gestalt Tweaks", detail: "MobileGestalt customizations", symbol: "slider.horizontal.3"),
+        ModuleInfo(title: "Icon Studio", detail: "Icon collections and tools", symbol: "app.dashed"),
+        ModuleInfo(title: "Passcode Studio", detail: "Import and preview .passthm themes", symbol: "circle.grid.3x3"),
+        ModuleInfo(title: "Live Wallpapers", detail: "Personal wallpaper library", symbol: "livephoto"),
+        ModuleInfo(title: "Device Manager", detail: "Compatibility and backups", symbol: "iphone.gen3")
+    ]
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
@@ -100,21 +118,11 @@ struct HomeView: View {
 
                 Text("Explore modules").font(.title2.bold())
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 145), spacing: 12)], spacing: 12) {
-                    NavigationLink {
-                        GestaltTweaksView()
-                    } label: {
-                        ModuleCard(title: "Gestalt Tweaks", detail: "MobileGestalt customizations", symbol: "slider.horizontal.3")
+                    ForEach(modules) { module in
+                        ModuleCard(module: module) {
+                            onInstall(module)
+                        }
                     }
-                    .buttonStyle(.plain)
-                    ModuleCard(title: "Icon Studio", detail: "Icon collections and tools", symbol: "app.dashed")
-                    NavigationLink {
-                        PasscodeStudioView()
-                    } label: {
-                        ModuleCard(title: "Passcode Studio", detail: "Import and preview .passthm themes", symbol: "circle.grid.3x3")
-                    }
-                    .buttonStyle(.plain)
-                    ModuleCard(title: "Live Wallpapers", detail: "Personal wallpaper library", symbol: "livephoto")
-                    ModuleCard(title: "Device Manager", detail: "Compatibility and backups", symbol: "iphone.gen3")
                 }
             }
             .padding()
@@ -126,21 +134,30 @@ struct HomeView: View {
 }
 
 struct ModuleCard: View {
-    let title: String
-    let detail: String
-    let symbol: String
+    let module: ModuleInfo
+    let onInstall: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Image(systemName: symbol)
+        VStack(alignment: .leading, spacing: 10) {
+            Image(systemName: module.symbol)
                 .font(.title2)
                 .foregroundStyle(.tint)
                 .frame(width: 42, height: 42)
                 .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 13))
-            Text(title).font(.headline)
-            Text(detail).font(.caption).foregroundStyle(.secondary)
+            Text(module.title).font(.headline)
+            Text(module.detail).font(.caption).foregroundStyle(.secondary)
+            HStack {
+                Spacer()
+                Button(action: onInstall) {
+                    Label("Install", systemImage: "arrow.down.circle")
+                        .font(.caption.weight(.semibold))
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .tint(.purple)
+            }
         }
-        .frame(maxWidth: .infinity, minHeight: 125, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 145, alignment: .leading)
         .padding()
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20))
         .contentShape(RoundedRectangle(cornerRadius: 20))
@@ -169,10 +186,33 @@ struct ModuleListView: View {
     let title: String
     let subtitle: String
     let modules: [ModuleInfo]
+    let onInstall: (ModuleInfo) -> Void
 
     var body: some View {
         List(modules) { module in
-            moduleRow(for: module)
+            HStack(spacing: 12) {
+                Label {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(module.title).font(.headline)
+                        Text(module.detail).font(.caption).foregroundStyle(.secondary)
+                    }
+                } icon: {
+                    Image(systemName: module.symbol).foregroundStyle(.tint)
+                }
+                Spacer(minLength: 8)
+                if module.title != "No packages yet" {
+                    Button {
+                        onInstall(module)
+                    } label: {
+                        Text("Install")
+                            .font(.subheadline.weight(.semibold))
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                    .tint(.purple)
+                }
+            }
+            .padding(.vertical, 5)
         }
         .navigationTitle(title)
         .safeAreaInset(edge: .top) {
@@ -181,38 +221,6 @@ struct ModuleListView: View {
                 .padding(.horizontal).padding(.top, 8)
         }
     }
-
-    @ViewBuilder
-    private func moduleRow(for module: ModuleInfo) -> some View {
-        if module.title == "Passcode Themes" {
-            NavigationLink {
-                PasscodeStudioView()
-            } label: {
-                moduleLabel(module)
-            }
-        } else if module.title == "Gestalt Tweaks" {
-            NavigationLink {
-                GestaltTweaksView()
-            } label: {
-                moduleLabel(module)
-            }
-        } else {
-            moduleLabel(module)
-        }
-    }
-
-    private func moduleLabel(_ module: ModuleInfo) -> some View {
-        Label {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(module.title).font(.headline)
-                Text(module.detail).font(.caption).foregroundStyle(.secondary)
-            }
-        } icon: {
-            Image(systemName: module.symbol).foregroundStyle(.tint)
-        }
-        .padding(.vertical, 5)
-    }
-
 }
 
 struct SettingsView: View {
