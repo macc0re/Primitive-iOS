@@ -4,6 +4,17 @@ extension Color {
     static let primitiveBlue = Color(red: 0.10, green: 0.55, blue: 1.0)
 }
 
+extension View {
+    @ViewBuilder
+    func primitiveGlass<S: Shape>(in shape: S) -> some View {
+        if #available(iOS 26.0, *) {
+            self.glassEffect(.regular, in: shape)
+        } else {
+            self.background(.regularMaterial, in: shape)
+        }
+    }
+}
+
 enum PrimitiveTab: String, CaseIterable, Identifiable {
     case home = "Home"
     case store = "Store"
@@ -56,6 +67,7 @@ struct RootView: View {
                             .tag(tab)
                     }
                 }
+                .toolbarBackground(.automatic, for: .tabBar)
             }
         }
         .tint(Color.primitiveBlue)
@@ -168,7 +180,7 @@ struct HomeView: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 .padding().frame(maxWidth: .infinity, alignment: .leading)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 22))
+                .primitiveGlass(in: RoundedRectangle(cornerRadius: 22))
 
                 VStack(alignment: .leading, spacing: 18) {
                     HStack(spacing: 14) {
@@ -307,7 +319,7 @@ struct ModuleCard: View {
             }
         }
         .frame(maxWidth: .infinity, minHeight: 145, alignment: .leading)
-        .padding().background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20))
+        .padding().primitiveGlass(in: RoundedRectangle(cornerRadius: 20))
         .contentShape(RoundedRectangle(cornerRadius: 20))
     }
 }
