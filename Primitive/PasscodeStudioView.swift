@@ -38,7 +38,7 @@ final class PasscodeThemeLibrary: ObservableObject {
         )) ?? []
 
         themes = files
-            .filter { $0.pathExtension.lowercased() == "passthm" }
+            .filter { ["passthm", "zip"].contains($0.pathExtension.lowercased()) }
             .compactMap { try? inspectTheme(at: $0) }
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
@@ -53,8 +53,8 @@ final class PasscodeThemeLibrary: ObservableObject {
 
         let folder = try themeFolder()
         let originalName = sourceURL.lastPathComponent
-        let safeName = UUID().uuidString.prefix(8) + "-" + originalName
-        let destination = folder.appendingPathComponent(String(safeName))
+        let safeName = "\\(UUID().uuidString.prefix(8))-\\(originalName)"
+        let destination = folder.appendingPathComponent(safeName)
 
         try fileManager.copyItem(at: sourceURL, to: destination)
 
