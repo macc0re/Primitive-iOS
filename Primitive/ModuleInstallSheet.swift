@@ -105,15 +105,15 @@ struct ModuleInstallSheet: View {
                         .font(.caption).foregroundStyle(.secondary)
                 }
 
-                Button(action: installQueue) {
+                Button(action: processQueue) {
                     HStack {
                         if isInstalling { ProgressView().tint(.white) }
-                        else { Image(systemName: "arrow.down.circle.fill") }
-                        Text(isInstalling ? "Installing…" : "Install All (\(queue.count))")
+                        else { Image(systemName: uninstallMode ? "trash" : "arrow.down.circle.fill") }
+                        Text(isInstalling ? (uninstallMode ? "Uninstalling…" : "Installing…") : (uninstallMode ? "Uninstall All (\(queue.count))" : "Install All (\(queue.count))"))
                     }
                     .font(.headline).frame(maxWidth: .infinity).padding(.vertical, 13)
                 }
-                .buttonStyle(.borderedProminent).tint(.purple).disabled(isInstalling)
+                .buttonStyle(.borderedProminent).tint(uninstallMode ? .red : .purple).disabled(isInstalling)
             }
             Spacer(minLength: 0)
         }
