@@ -309,7 +309,10 @@ struct SettingsView: View {
                                 .foregroundStyle(.purple.opacity(0.8))
                         }
                     }
-                    .frame(width: 82, height: 112)
+                    .frame(
+                        width: UIDevice.current.userInterfaceIdiom == .pad ? 155 : 125,
+                        height: UIDevice.current.userInterfaceIdiom == .pad ? 155 : 185
+                    )
                     .accessibilityLabel(device.marketingName)
                     VStack(alignment: .leading, spacing: 5) {
                         Text(device.marketingName)
