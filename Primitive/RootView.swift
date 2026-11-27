@@ -22,6 +22,7 @@ struct RootView: View {
     @State private var showModuleSheet = false
     @State private var installQueue: [ModuleInfo] = []
     @State private var activeModule: ModuleInfo?
+    @State private var uninstallMode = false
     @State private var infoModule: ModuleInfo?
     @State private var installedIDs = Set(UserDefaults.standard.stringArray(forKey: "primitive.installed.module.ids") ?? [])
 
@@ -59,7 +60,7 @@ struct RootView: View {
                 queue: $installQueue,
                 installedIDs: $installedIDs,
                 activeModule: activeModule,
-                onUninstall: uninstall,
+                uninstallMode: uninstallMode,
                 onClose: {
                     showModuleSheet = false
                     activeModule = nil
@@ -84,17 +85,22 @@ struct RootView: View {
         }
     }
 
-    private func uninstall(_ module: ModuleInfo) {
-        installedIDs.remove(module.id)
-        UserDefaults.standard.set(Array(installedIDs), forKey: "primitive.installed.module.ids")
-        installQueue.removeAll { $0.id == module.id }
+    private func queueUninstall(_ module: ModuleInfo) {
+        guard installedIDs.contains(module.id) else { return }
         activeModule = nil
+        uninstallMode = true
+        if !installQueue.contains(where: { $0.id == module.id }) {
+            installQueue.append(module)
+        }
+        showModuleSheet = true
     }
 
     private func select(_ module: ModuleInfo) {
         if installedIDs.contains(module.id) {
             activeModule = module
+            uninstallMode = false
         } else {
+            uninstallMode = false
             activeModule = nil
             if !installQueue.contains(where: { $0.id == module.id }) {
                 installQueue.append(module)
@@ -106,8 +112,8 @@ struct RootView: View {
     @ViewBuilder private var detail: some View {
         switch selection {
         case .home: HomeView(installedIDs: installedIDs, onSelect: select)
-        case .store: ModuleListView(title: "Primitive Store", subtitle: "Discover compatible customizations.", modules: ModuleInfo.store, installedIDs: installedIDs, isStore: true, onSelect: select, onInfo: { infoModule = $0 }, onUninstall: uninstall)
-        case .installed: ModuleListView(title: "Installed", subtitle: "Manage your installed customizations.", modules: ModuleInfo.catalog.filter { installedIDs.contains($0.id) }, installedIDs: installedIDs, isStore: false, onSelect: select, onInfo: { infoModule = $0 }, onUninstall: uninstall)
+        case .store: ModuleListView(title: "Primitive Store", subtitle: "Discover compatible customizations.", modules: ModuleInfo.store, installedIDs: installedIDs, onSelect: select, onInfo: { infoModule = $0 }, onUninstall: queueUninstall)
+        case .installed: ModuleListView(title: "Installed", subtitle: "Manage your installed customizations.", modules: ModuleInfo.catalog.filter { installedIDs.contains($0.id) }, installedIDs: installedIDs, onSelect: select, onInfo: { infoModule = $0 }, onUninstall: queueUninstall)
         case .settings: SettingsView()
         }
     }
@@ -223,7 +229,6 @@ struct ModuleListView: View {
     let subtitle: String
     let modules: [ModuleInfo]
     let installedIDs: Set<String>
-    let isStore: Bool
     let onSelect: (ModuleInfo) -> Void
     let onInfo: (ModuleInfo) -> Void
     let onUninstall: (ModuleInfo) -> Void
@@ -253,14 +258,12 @@ struct ModuleListView: View {
                     }
                     .padding(.vertical, 5)
                     .contextMenu {
-                        if isStore {
-                            Button { onInfo(module) } label: {
-                                Label("Info", systemImage: "info.circle")
-                            }
-                            if installedIDs.contains(module.id) {
-                                Button(role: .destructive) { onUninstall(module) } label: {
-                                    Label("Uninstall Tweak", systemImage: "trash")
-                                }
+                        Button { onInfo(module) } label: {
+                            Label("Info", systemImage: "info.circle")
+                        }
+                        if installedIDs.contains(module.id) {
+                            Button(role: .destructive) { onUninstall(module) } label: {
+                                Label("Uninstall Tweak", systemImage: "trash")
                             }
                         }
                     }
