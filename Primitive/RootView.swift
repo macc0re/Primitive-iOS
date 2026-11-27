@@ -167,15 +167,7 @@ struct ModuleListView: View {
 
     var body: some View {
         List(modules) { module in
-            Label {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(module.title).font(.headline)
-                    Text(module.detail).font(.caption).foregroundStyle(.secondary)
-                }
-            } icon: {
-                Image(systemName: module.symbol).foregroundStyle(.tint)
-            }
-            .padding(.vertical, 5)
+            moduleRow(for: module)
         }
         .navigationTitle(title)
         .safeAreaInset(edge: .top) {
@@ -205,3 +197,29 @@ struct SettingsView: View {
         .navigationTitle("Settings")
     }
 }
+
+
+    @ViewBuilder
+    private func moduleRow(for module: ModuleInfo) -> some View {
+        if module.title == "Passcode Themes" {
+            NavigationLink {
+                PasscodeStudioView()
+            } label: {
+                moduleLabel(module)
+            }
+        } else {
+            moduleLabel(module)
+        }
+    }
+
+    private func moduleLabel(_ module: ModuleInfo) -> some View {
+        Label {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(module.title).font(.headline)
+                Text(module.detail).font(.caption).foregroundStyle(.secondary)
+            }
+        } icon: {
+            Image(systemName: module.symbol).foregroundStyle(.tint)
+        }
+        .padding(.vertical, 5)
+    }
