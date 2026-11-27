@@ -1,5 +1,9 @@
 import SwiftUI
 
+extension Color {
+    static let primitiveBlue = Color(red: 0.10, green: 0.55, blue: 1.0)
+}
+
 enum PrimitiveTab: String, CaseIterable, Identifiable {
     case home = "Home"
     case store = "Store"
@@ -38,7 +42,7 @@ struct RootView: View {
                                     .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
-                            .listRowBackground(selection == tab ? Color.purple.opacity(0.14) : Color.clear)
+                            .listRowBackground(selection == tab ? ColorColor.primitiveBlue.opacity(0.14) : Color.clear)
                         }
                     }
                     .navigationTitle("Primitive")
@@ -54,7 +58,7 @@ struct RootView: View {
                 }
             }
         }
-        .tint(.purple)
+        .tint(Color.primitiveBlue)
         .sheet(isPresented: $showModuleSheet) {
             ModuleInstallSheet(
                 queue: $installQueue,
@@ -70,7 +74,7 @@ struct RootView: View {
         .sheet(item: $infoModule) { module in
             NavigationStack {
                 VStack(alignment: .leading, spacing: 16) {
-                    Image(systemName: module.symbol).font(.system(size: 42)).foregroundStyle(.purple)
+                    Image(systemName: module.symbol).font(.system(size: 42)).foregroundStyle(Color.primitiveBlue)
                     Text(module.title).font(.title2.bold())
                     Text(module.detail).foregroundStyle(.secondary)
                     LabeledContent("Package ID", value: module.id)
@@ -290,7 +294,7 @@ struct ModuleCard: View {
                     Label(isInstalled ? "Open" : "Install", systemImage: isInstalled ? "arrow.up.right.square" : "arrow.down.circle")
                         .font(.caption.weight(.semibold))
                 }
-                .buttonStyle(.borderedProminent).controlSize(.small).tint(.purple)
+                .buttonStyle(.borderedProminent).controlSize(.small).tint(Color.primitiveBlue)
             }
         }
         .frame(maxWidth: .infinity, minHeight: 145, alignment: .leading)
@@ -358,7 +362,7 @@ struct ModuleListView: View {
                             Text(installedIDs.contains(module.id) ? "Open" : "Install")
                                 .font(.subheadline.weight(.semibold))
                         }
-                        .buttonStyle(.borderedProminent).controlSize(.small).tint(.purple)
+                        .buttonStyle(.borderedProminent).controlSize(.small).tint(Color.primitiveBlue)
                     }
                     .padding(.vertical, 5)
                     .contextMenu {
@@ -400,17 +404,17 @@ struct SettingsView: View {
                                 case .empty, .failure:
                                     Image(systemName: device.symbol)
                                         .resizable().scaledToFit()
-                                        .foregroundStyle(.purple.opacity(0.8))
+                                        .foregroundStyle(Color.primitiveBlue.opacity(0.8))
                                 @unknown default:
                                     Image(systemName: device.symbol)
                                         .resizable().scaledToFit()
-                                        .foregroundStyle(.purple.opacity(0.8))
+                                        .foregroundStyle(Color.primitiveBlue.opacity(0.8))
                                 }
                             }
                         } else {
                             Image(systemName: device.symbol)
                                 .resizable().scaledToFit()
-                                .foregroundStyle(.purple.opacity(0.8))
+                                .foregroundStyle(Color.primitiveBlue.opacity(0.8))
                         }
                     }
                     .frame(
