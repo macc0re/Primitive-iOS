@@ -23,7 +23,7 @@ final class LocalVPNMonitor: ObservableObject {
         if tunnelDetected {
             return "A VPN tunnel is active, but its address does not match Local Dev VPN."
         }
-        return "Connect Local Dev VPN before starting device pairing."
+        return "Connect Local Dev VPN for supported AirLift connections. Device pairing is independent."
     }
 
     func refresh() {
