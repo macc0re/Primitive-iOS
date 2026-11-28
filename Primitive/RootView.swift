@@ -246,9 +246,9 @@ struct HomeView: View {
                     Label("Local Dev VPN", systemImage: "network")
                         .font(.headline)
                     HStack(spacing: 12) {
-                        Image(systemName: vpnMonitor.tunnelDetected ? "checkmark.circle.fill" : "xmark.circle")
+                        Image(systemName: vpnMonitor.localDevVPNConnected ? "checkmark.circle.fill" : "xmark.circle")
                             .font(.title2)
-                            .foregroundStyle(vpnMonitor.tunnelDetected ? Color.green : Color.secondary)
+                            .foregroundStyle(vpnMonitor.localDevVPNConnected ? Color.green : Color.secondary)
                         VStack(alignment: .leading, spacing: 3) {
                             Text(vpnMonitor.statusTitle)
                                 .font(.subheadline.weight(.semibold))
@@ -266,7 +266,7 @@ struct HomeView: View {
                     }
                     .buttonStyle(.bordered)
                     .tint(Color.primitiveBlue)
-                    Text("iOS exposes tunnel interfaces but does not reliably identify which third-party VPN app owns them. Verify that Local Dev VPN is the active tunnel.")
+                    Text("Primitive identifies Local Dev VPN by its fixed tunnel address, 10.7.1.1/32. Other VPN tunnels do not enable pairing.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -323,9 +323,9 @@ struct HomeView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(Color.primitiveBlue)
-                    .disabled(!vpnMonitor.tunnelDetected)
-                    if !vpnMonitor.tunnelDetected {
-                        Text("Pairing is unavailable until a VPN tunnel is detected.")
+                    .disabled(!vpnMonitor.localDevVPNConnected)
+                    if !vpnMonitor.localDevVPNConnected {
+                        Text("Pairing is available only when Local Dev VPN is detected at 10.7.1.1/32.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -619,8 +619,8 @@ struct SettingsView: View {
                 }
 
                 HStack(spacing: 10) {
-                    Image(systemName: vpnMonitor.tunnelDetected ? "checkmark.circle.fill" : "xmark.circle")
-                        .foregroundStyle(vpnMonitor.tunnelDetected ? .green : .secondary)
+                    Image(systemName: vpnMonitor.localDevVPNConnected ? "checkmark.circle.fill" : "xmark.circle")
+                        .foregroundStyle(vpnMonitor.localDevVPNConnected ? .green : .secondary)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(vpnMonitor.statusTitle)
                         Text(vpnMonitor.statusDetail)
@@ -640,7 +640,7 @@ struct SettingsView: View {
                 } label: {
                     Label("Pair This iPhone", systemImage: "link")
                 }
-                .disabled(!vpnMonitor.tunnelDetected)
+                .disabled(!vpnMonitor.localDevVPNConnected)
 
                 Button {
                     isImportingPairingFile = true
