@@ -39,10 +39,4 @@ targets:
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         OTHER_LDFLAGS: "-lc++"
     info:
-      properties:
-        NSLocalNetworkUsageDescription: "Primitive advertises a local pairing service so iOS Developer Mode can pair this iPhone with Primitive."
-        NSBonjourServices:
-          - _remotepairing-pairable-host._tcp
-          - _aircardprobe._tcp
-        UIBackgroundModes:
-          - audio
+      path: Primitive/Info.plist
