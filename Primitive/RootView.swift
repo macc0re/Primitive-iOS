@@ -344,7 +344,11 @@ struct HomeView: View {
         .task {
             while !Task.isCancelled {
                 vpnMonitor.refresh()
-                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                do {
+                    try await Task.sleep(nanoseconds: 2_000_000_000)
+                } catch {
+                    break
+                }
             }
         }
         .alert(item: $activeNotice) { notice in
