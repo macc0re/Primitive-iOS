@@ -546,6 +546,12 @@ struct ModuleListView: View {
 
 struct SettingsView: View {
     @AppStorage("primitive.exploit.selection") private var selectedExploit = "worse_query"
+    @StateObject private var vpnMonitor = LocalVPNMonitor()
+    @State private var pairingFileName = PairingRecordStore.storedFileName()
+    @State private var isImportingPairingFile = false
+    @State private var pairingMessage: String?
+    @State private var showRemovePairingConfirmation = false
+    @State private var showPairingInfo = false
     private let device = PrimitiveDeviceProfile.current
 
     var body: some View {
@@ -557,9 +563,7 @@ struct SettingsView: View {
                             AsyncImage(url: imageURL) { phase in
                                 switch phase {
                                 case .success(let image):
-                                    image
-                                        .resizable()
-                                        .scaledToFit()
+                                    image.resizable().scaledToFit()
                                 case .empty, .failure:
                                     Color.clear
                                 @unknown default:
@@ -595,6 +599,72 @@ struct SettingsView: View {
                 .padding(.vertical, 8)
             } header: {
                 Text("Device Information")
+            }
+
+            Section("Device Pairing") {
+                HStack(spacing: 10) {
+                    Image(systemName: pairingFileName == nil ? "doc.badge.questionmark" : "checkmark.shield.fill")
+                        .foregroundStyle(pairingFileName == nil ? .secondary : .green)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(pairingFileName ?? "No pairing file saved")
+                            .font(.subheadline.weight(.semibold))
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                        Text(pairingFileName == nil
+                             ? "Import a .mobiledevicepairing or .plist file."
+                             : "Stored in Primitive's protected app storage.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                HStack(spacing: 10) {
+                    Image(systemName: vpnMonitor.tunnelDetected ? "checkmark.circle.fill" : "xmark.circle")
+                        .foregroundStyle(vpnMonitor.tunnelDetected ? .green : .secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(vpnMonitor.statusTitle)
+                        Text(vpnMonitor.statusDetail)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Button {
+                    vpnMonitor.refresh()
+                } label: {
+                    Label("Refresh VPN Status", systemImage: "arrow.clockwise")
+                }
+
+                Button {
+                    showPairingInfo = true
+                } label: {
+                    Label("Pair This iPhone", systemImage: "link")
+                }
+                .disabled(!vpnMonitor.tunnelDetected)
+
+                Button {
+                    isImportingPairingFile = true
+                } label: {
+                    Label("Import Pairing File", systemImage: "folder")
+                }
+
+                if pairingFileName != nil {
+                    Button(role: .destructive) {
+                        showRemovePairingConfirmation = true
+                    } label: {
+                        Label("Remove Pairing File", systemImage: "trash")
+                    }
+                }
+
+                if let pairingMessage {
+                    Text(pairingMessage)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Text("When the pairing backend is connected, Primitive will display the real six-digit code here. Enter it in Settings → Privacy & Security → Developer Mode → Pair with Primitive. The pairing record will be saved after iOS completes the pairing.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Section("Exploit Settings") {
@@ -637,5 +707,59 @@ struct SettingsView: View {
             }
         }
         .navigationTitle("Settings")
+        .task {
+            while !Task.isCancelled {
+                vpnMonitor.refresh()
+                do {
+                    try await Task.sleep(nanoseconds: 2_000_000_000)
+                } catch {
+                    break
+                }
+            }
+        }
+        .fileImporter(
+            isPresented: $isImportingPairingFile,
+            allowedContentTypes: [.data, .propertyList],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                guard let url = urls.first else { return }
+                let accessed = url.startAccessingSecurityScopedResource()
+                defer {
+                    if accessed { url.stopAccessingSecurityScopedResource() }
+                }
+                do {
+                    let data = try Data(contentsOf: url)
+                    let savedURL = try PairingRecordStore.save(data, originalName: url.lastPathComponent)
+                    pairingFileName = savedURL.lastPathComponent
+                    pairingMessage = "Pairing file imported and stored securely."
+                } catch {
+                    pairingMessage = "Import failed: \(error.localizedDescription)"
+                }
+            case .failure(let error):
+                pairingMessage = "Import cancelled or failed: \(error.localizedDescription)"
+            }
+        }
+        .confirmationDialog(
+            "Remove the saved pairing file?",
+            isPresented: $showRemovePairingConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Remove Pairing File", role: .destructive) {
+                do {
+                    try PairingRecordStore.removeStoredFile()
+                    pairingFileName = nil
+                    pairingMessage = "Pairing file removed."
+                } catch {
+                    pairingMessage = "Could not remove pairing file: \(error.localizedDescription)"
+                }
+            }
+        }
+        .alert("Device Pairing", isPresented: $showPairingInfo) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("The VPN tunnel is detected. The real iOS pairing handshake is not connected yet, so Primitive cannot generate a valid PIN or receive a pairing record yet.")
+        }
     }
 }
