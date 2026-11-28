@@ -38,5 +38,7 @@ targets:
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         OTHER_LDFLAGS: "-lc++"
+        CODE_SIGN_ENTITLEMENTS: Primitive/Primitive.entitlements
+        SWIFT_OBJC_BRIDGING_HEADER: Primitive/WorseQuery-Bridging-Header.h
     info:
       path: Primitive/Info.plist
