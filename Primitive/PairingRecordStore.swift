@@ -20,6 +20,11 @@ enum PairingRecordStore {
         storedFileURL()?.lastPathComponent
     }
 
+    static func removeStoredFile() throws {
+        guard let fileURL = storedFileURL() else { return }
+        try FileManager.default.removeItem(at: fileURL)
+    }
+
     /// Stores a property-list pairing record with complete file protection.
     /// The same method can be called by a future pairing backend after authorization.
     @discardableResult
