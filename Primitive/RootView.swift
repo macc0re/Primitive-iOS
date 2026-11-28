@@ -156,6 +156,7 @@ struct HomeView: View {
     @State private var isImportingPairingFile = false
     @State private var pairingFileName = PairingRecordStore.storedFileName()
     @State private var pairingStatusMessage: String?
+    @StateObject private var vpnMonitor = LocalVPNMonitor()
 
     private var exploitCompatibility: PrimitiveExploit.Compatibility {
         PrimitiveExploitEngine
@@ -245,19 +246,27 @@ struct HomeView: View {
                     Label("Local Dev VPN", systemImage: "network")
                         .font(.headline)
                     HStack(spacing: 12) {
-                        Image(systemName: "questionmark.circle")
+                        Image(systemName: vpnMonitor.tunnelDetected ? "checkmark.circle.fill" : "xmark.circle")
                             .font(.title2)
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(vpnMonitor.tunnelDetected ? .green : .secondary)
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("Detection not connected")
+                            Text(vpnMonitor.statusTitle)
                                 .font(.subheadline.weight(.semibold))
-                            Text("Primitive does not identify the Local Dev VPN state yet.")
+                            Text(vpnMonitor.statusDetail)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
                         Spacer(minLength: 0)
                     }
-                    Text("AirLift will use this status to determine whether its connection requirements are met.")
+                    Button {
+                        vpnMonitor.refresh()
+                    } label: {
+                        Label("Refresh Status", systemImage: "arrow.clockwise")
+                            .frame(maxWidth: .infinity, minHeight: 42)
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(Color.primitiveBlue)
+                    Text("iOS exposes tunnel interfaces but does not reliably identify which third-party VPN app owns them. Verify that Local Dev VPN is the active tunnel.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -308,12 +317,18 @@ struct HomeView: View {
                     Button {
                         activeNotice = .pairDevice
                     } label: {
-                        Label("Pair Device", systemImage: "link")
+                        Label("Pair This iPhone", systemImage: "link")
                             .font(.body.weight(.semibold))
                             .frame(maxWidth: .infinity, minHeight: 48)
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(Color.primitiveBlue)
+                    .disabled(!vpnMonitor.tunnelDetected)
+                    if !vpnMonitor.tunnelDetected {
+                        Text("Pairing is unavailable until a VPN tunnel is detected.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
 
                     Text("Manual import is available. Automatic pairing and PIN generation will be connected separately.")
                         .font(.caption)
@@ -326,6 +341,12 @@ struct HomeView: View {
             .padding().frame(maxWidth: 900, alignment: .leading).frame(maxWidth: .infinity)
         }
         .navigationTitle("Home")
+        .task {
+            while !Task.isCancelled {
+                vpnMonitor.refresh()
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+            }
+        }
         .alert(item: $activeNotice) { notice in
             Alert(
                 title: Text(notice.title),
