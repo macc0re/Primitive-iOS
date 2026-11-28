@@ -604,7 +604,7 @@ struct SettingsView: View {
             Section("Device Pairing") {
                 HStack(spacing: 10) {
                     Image(systemName: pairingFileName == nil ? "doc.badge.questionmark" : "checkmark.shield.fill")
-                        .foregroundStyle(pairingFileName == nil ? .secondary : .green)
+                        .foregroundStyle(pairingFileName == nil ? Color.secondary : Color.green)
                     VStack(alignment: .leading, spacing: 3) {
                         Text(pairingFileName ?? "No pairing file saved")
                             .font(.subheadline.weight(.semibold))
