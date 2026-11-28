@@ -156,6 +156,7 @@ struct HomeView: View {
     @State private var isImportingPairingFile = false
     @State private var pairingFileName = PairingRecordStore.storedFileName()
     @State private var pairingStatusMessage: String?
+    @StateObject private var pairingController = PairingController.shared
     @StateObject private var vpnMonitor = LocalVPNMonitor()
 
     private var exploitCompatibility: PrimitiveExploit.Compatibility {
@@ -277,7 +278,7 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 14) {
                     Label("Device Pairing", systemImage: "laptopcomputer.and.iphone")
                         .font(.headline)
-                    Text("A pairing record is required by supported AirLift workflows. You can import an existing record or pair through Primitive when that backend is available.")
+                    Text("Pair this iPhone through iOS Developer Mode, or import an existing pairing record.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
 
@@ -298,6 +299,15 @@ struct HomeView: View {
                     .padding(12)
                     .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 13))
 
+                    if let pin = pairingController.pairingPIN {
+                        Text("PIN: \(pin)")
+                            .font(.title2.monospaced().bold())
+                            .foregroundStyle(Color.primitiveBlue)
+                    }
+                    Text(pairingController.pairingStatus)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
                     if let pairingStatusMessage {
                         Text(pairingStatusMessage)
                             .font(.caption)
@@ -315,16 +325,25 @@ struct HomeView: View {
                     .tint(Color.primitiveBlue)
 
                     Button {
-                        activeNotice = .pairDevice
+                        Task {
+                            do {
+                                let savedURL = try await pairingController.startAndStore()
+                                pairingFileName = savedURL.lastPathComponent
+                                pairingStatusMessage = "Pairing record saved securely."
+                            } catch {
+                                pairingStatusMessage = error.localizedDescription
+                            }
+                        }
                     } label: {
-                        Label("Pair This iPhone", systemImage: "link")
+                        Label(pairingController.isRunning ? "Pairing in Progress" : "Pair This iPhone", systemImage: "link")
                             .font(.body.weight(.semibold))
                             .frame(maxWidth: .infinity, minHeight: 48)
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(Color.primitiveBlue)
+                    .disabled(pairingController.isRunning)
 
-                    Text("Manual import is available. Automatic pairing and PIN generation will be connected separately.")
+                    Text("When the PIN appears, enter it in Settings → Privacy & Security → Developer Mode → Pair with Primitive. The pairing record is saved automatically after approval.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -405,14 +424,13 @@ struct HomeView: View {
 }
 
 private enum HomeActionNotice: String, Identifiable {
-    case apply, remove, pairing, pairDevice, skipInfo
+    case apply, remove, pairing, skipInfo
     var id: String { rawValue }
     var title: String {
         switch self {
         case .apply: "Apply Tweaks"
         case .remove: "Remove All Tweaks"
         case .pairing: "Select Pairing File"
-        case .pairDevice: "Device Pairing"
         case .skipInfo: "Traditional Skip Setup"
         }
     }
@@ -421,7 +439,6 @@ private enum HomeActionNotice: String, Identifiable {
         case .apply: "The MobileGestalt engine is not connected yet. This action will be enabled when the engine is implemented."
         case .remove: "Tweak removal is not connected yet. Original-value backups and the restore engine must be implemented first."
         case .pairing: "Pairing-file support is not connected yet. No file has been selected."
-        case .pairDevice: "The pairing interface is in place, but the iOS pairing backend is not connected yet. Primitive does not generate a PIN or create a pairing record at this stage."
         case .skipInfo: "This option stores your preference. Its system behavior will be connected when the exploit engine is integrated."
         }
     }
@@ -545,7 +562,7 @@ struct SettingsView: View {
     @State private var isImportingPairingFile = false
     @State private var pairingMessage: String?
     @State private var showRemovePairingConfirmation = false
-    @State private var showPairingInfo = false
+    @StateObject private var pairingController = PairingController.shared
     private let device = PrimitiveDeviceProfile.current
 
     var body: some View {
@@ -629,11 +646,29 @@ struct SettingsView: View {
                     Label("Refresh VPN Status", systemImage: "arrow.clockwise")
                 }
 
-                Button {
-                    showPairingInfo = true
-                } label: {
-                    Label("Pair This iPhone", systemImage: "link")
+                if let pin = pairingController.pairingPIN {
+                    Text("PIN: \(pin)")
+                        .font(.title2.monospaced().bold())
+                        .foregroundStyle(Color.primitiveBlue)
                 }
+                Text(pairingController.pairingStatus)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Button {
+                    Task {
+                        do {
+                            let savedURL = try await pairingController.startAndStore()
+                            pairingFileName = savedURL.lastPathComponent
+                            pairingMessage = "Pairing record saved securely."
+                        } catch {
+                            pairingMessage = error.localizedDescription
+                        }
+                    }
+                } label: {
+                    Label(pairingController.isRunning ? "Pairing in Progress" : "Pair This iPhone", systemImage: "link")
+                }
+                .disabled(pairingController.isRunning)
 
                 Button {
                     isImportingPairingFile = true
@@ -655,7 +690,7 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                Text("When the pairing backend is connected, Primitive will display the real six-digit code here. Enter it in Settings → Privacy & Security → Developer Mode → Pair with Primitive. The pairing record will be saved after iOS completes the pairing.")
+                Text("Primitive starts the RPPairing host locally. Enter the generated PIN in Settings → Privacy & Security → Developer Mode → Pair with Primitive. The resulting pairing record is saved automatically.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -748,11 +783,6 @@ struct SettingsView: View {
                     pairingMessage = "Could not remove pairing file: \(error.localizedDescription)"
                 }
             }
-        }
-        .alert("Device Pairing", isPresented: $showPairingInfo) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text("Device pairing does not require Local Dev VPN. Primitive’s pairing backend is not connected yet, so this button cannot start the native pairing request or generate a PIN. The VPN is a separate requirement for later AirLift connectivity.")
         }
     }
 }

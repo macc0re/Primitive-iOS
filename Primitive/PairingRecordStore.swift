@@ -13,11 +13,24 @@ enum PairingRecordStore {
             at: directoryURL,
             includingPropertiesForKeys: nil
         ) else { return nil }
-        return files.first
+        return files.first { $0.lastPathComponent != "airlift-generated.plist" }
     }
 
     static func storedFileName() -> String? {
         storedFileURL()?.lastPathComponent
+    }
+
+    /// Creates the protected output location used by Airlift while pairing is in progress.
+    static func preparePairingOutputURL() throws -> URL {
+        let manager = FileManager.default
+        try manager.createDirectory(
+            at: directoryURL,
+            withIntermediateDirectories: true,
+            attributes: [.protectionKey: FileProtectionType.complete]
+        )
+        let outputURL = directoryURL.appendingPathComponent("airlift-generated.plist")
+        try? manager.removeItem(at: outputURL)
+        return outputURL
     }
 
     static func removeStoredFile() throws {

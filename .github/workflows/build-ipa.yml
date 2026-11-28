@@ -7,6 +7,7 @@ on:
     paths:
       - "Primitive/**"
       - "project.yml"
+      - "Vendor/**"
       - ".github/workflows/build-ipa.yml"
 
 jobs:
@@ -18,6 +19,17 @@ jobs:
 
       - name: Verify Xcode 27 toolchain
         run: xcodebuild -version
+
+      - name: Fetch pinned Airlift framework
+        run: |
+          git clone --filter=blob:none --no-checkout https://github.com/Mak5er/AirCard-iOS.git /tmp/AirCard-iOS
+          git -C /tmp/AirCard-iOS fetch --depth 1 origin 40640c4d827aeab8d798285b57d24fcf6be070d0
+          git -C /tmp/AirCard-iOS sparse-checkout init --cone
+          git -C /tmp/AirCard-iOS sparse-checkout set AirliftFFI.xcframework
+          git -C /tmp/AirCard-iOS checkout --detach 40640c4d827aeab8d798285b57d24fcf6be070d0
+          mkdir -p Vendor
+          cp -R /tmp/AirCard-iOS/AirliftFFI.xcframework Vendor/
+          test -f Vendor/AirliftFFI.xcframework/ios-arm64/Headers/airlift.h
 
       - name: Prepare app icon
         run: sips -z 1024 1024 Primitive/Assets.xcassets/AppIcon.appiconset/AppIcon.png --out Primitive/Assets.xcassets/AppIcon.appiconset/AppIcon.png
