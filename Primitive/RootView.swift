@@ -248,7 +248,7 @@ struct HomeView: View {
                     HStack(spacing: 12) {
                         Image(systemName: vpnMonitor.tunnelDetected ? "checkmark.circle.fill" : "xmark.circle")
                             .font(.title2)
-                            .foregroundStyle(vpnMonitor.tunnelDetected ? .green : .secondary)
+                            .foregroundStyle(vpnMonitor.tunnelDetected ? Color.green : Color.secondary)
                         VStack(alignment: .leading, spacing: 3) {
                             Text(vpnMonitor.statusTitle)
                                 .font(.subheadline.weight(.semibold))
