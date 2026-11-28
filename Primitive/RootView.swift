@@ -266,7 +266,7 @@ struct HomeView: View {
                     }
                     .buttonStyle(.bordered)
                     .tint(Color.primitiveBlue)
-                    Text("Primitive identifies Local Dev VPN by its fixed tunnel address, 10.7.1.1/32. Other VPN tunnels do not enable pairing.")
+                    Text("Primitive identifies Local Dev VPN by its fixed tunnel address, 10.7.1.1/32. This status is used for later AirLift connectivity, not device pairing.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -323,12 +323,6 @@ struct HomeView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(Color.primitiveBlue)
-                    .disabled(!vpnMonitor.localDevVPNConnected)
-                    if !vpnMonitor.localDevVPNConnected {
-                        Text("Pairing is available only when Local Dev VPN is detected at 10.7.1.1/32.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
 
                     Text("Manual import is available. Automatic pairing and PIN generation will be connected separately.")
                         .font(.caption)
@@ -640,7 +634,6 @@ struct SettingsView: View {
                 } label: {
                     Label("Pair This iPhone", systemImage: "link")
                 }
-                .disabled(!vpnMonitor.localDevVPNConnected)
 
                 Button {
                     isImportingPairingFile = true
@@ -759,7 +752,7 @@ struct SettingsView: View {
         .alert("Device Pairing", isPresented: $showPairingInfo) {
             Button("OK", role: .cancel) { }
         } message: {
-            Text("The VPN tunnel is detected. The real iOS pairing handshake is not connected yet, so Primitive cannot generate a valid PIN or receive a pairing record yet.")
+            Text("Device pairing does not require Local Dev VPN. Primitive’s pairing backend is not connected yet, so this button cannot start the native pairing request or generate a PIN. The VPN is a separate requirement for later AirLift connectivity.")
         }
     }
 }
